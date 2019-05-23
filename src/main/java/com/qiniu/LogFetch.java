@@ -7,7 +7,7 @@ import com.qiniu.util.Auth;
 
 import java.time.*;
 
-public class App {
+public class LogFetch {
 
     public static void main( String[] args ) throws Exception {
 
