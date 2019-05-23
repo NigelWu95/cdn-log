@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,12 +35,20 @@ public class App {
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = "logs/" + url.substring(url.lastIndexOf("/") + 1);
         List<MPLog> logs = LogAnalyse.readToLogs(fileName);
-        url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime.plusHours(1)));
-        fileName = "logs/" + url.substring(url.lastIndexOf("/") + 1);
-        logs.addAll(LogAnalyse.readToLogs(fileName));
-        List<Statistics> statisticsList = LogAnalyse.getStatistics(logs).stream()
-                .filter(statistics -> statistics.getPointTime().compareTo(localDateTime.plusSeconds(3600)) <= 0)
-                .collect(Collectors.toList());
-        for (Statistics statistic : statisticsList) System.out.println(statistic);
+
+        while (localDateTime.compareTo(endLocalDateTime) <= 0) {
+            localDateTime = localDateTime.plusHours(1);
+            LocalDateTime nextDateTime = localDateTime;
+            url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
+            fileName = "logs/" + url.substring(url.lastIndexOf("/") + 1);
+            List<MPLog> nextPhraseLogs = LogAnalyse.readToLogs(fileName);
+            logs.addAll(nextPhraseLogs);
+            List<Statistics> statisticsList = LogAnalyse.getStatistics(logs).stream()
+                    .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0)
+                    .sorted(Comparator.comparing(Statistics::getPointTime))
+                    .collect(Collectors.toList());
+            for (Statistics statistic : statisticsList) System.out.println(statistic);
+            logs = nextPhraseLogs;
+        }
     }
 }
