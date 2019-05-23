@@ -24,43 +24,45 @@ public class LogParse {
         Set<MPLog> logSet = new HashSet<>();
         Set<MPLog> kdLogSet = new HashSet<>();
         List<MPLog> errorLogs = new ArrayList<>();
-//        List<String> errors = logs.parallelStream().filter(mpLog -> {
-//            int code = mpLog.getError();
-//            long duration = mpLog.getVideoViewLoadDuration();
-//            return code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000;
-//        }).map(mpLog -> mpLog.getError() + "\t" + mpLog.getVideoViewLoadDuration()).collect(Collectors.toList());
-
         Map<LocalDateTime, List<MPLog>> groupedMap = logs.parallelStream()
                 .collect(Collectors.groupingBy(mpLog -> DatetimeUtils.groupedTimeBy5Min(mpLog.getTime())));
-
-        List<Long> durations = logs.parallelStream().map(mpLog -> {
-            logSet.add(mpLog);
-            if (mpLog.getBufTimes() > 0) kdLogSet.add(mpLog);
-            int code = mpLog.getError();
-            long duration = mpLog.getVideoViewLoadDuration();
-            if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) errorLogs.add(mpLog);
-            return mpLog.getVideoViewLoadDuration();
-        }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
+        List<MPLog> groupedLogs;
+        for (LocalDateTime localDateTime : groupedMap.keySet()) {
+            groupedLogs = groupedMap.get(localDateTime);
+            List<Long> validDurations = groupedLogs.parallelStream().map(mpLog -> {
+                logSet.add(mpLog);
+                if (mpLog.getBufTimes() > 0) kdLogSet.add(mpLog);
+                int code = mpLog.getError();
+                long duration = mpLog.getVideoViewLoadDuration();
+                if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) errorLogs.add(mpLog);
+                return mpLog.getVideoViewLoadDuration();
+            }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
 
 //        logSet.addAll(logs);
-        long reqCount = logs.size();
-        long UV = logSet.size();
+            long reqCount = groupedLogs.size();
+            long UV = logSet.size();
 //                logs.parallelStream().distinct().count();
-        long kdUV = kdLogSet.size();
+            long kdUV = kdLogSet.size();
 //                logs.parallelStream().filter(mpLog -> mpLog.getBufTimes() > 0).distinct().count();
-        long validReqCount = durations.size();
-        long videoViewLoadDurationSum = durations.parallelStream().reduce(Long::sum).orElse(0L);
+            long validReqCount = validDurations.size();
+            long videoViewLoadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
 //                logs.parallelStream().collect(Collectors.summarizingLong(MPLog::getVideoViewLoadDuration)).getSum();
-        long errorCount = errorLogs.size();
+            long errorCount = errorLogs.size();
 
-        System.out.println("UV: " + UV);
-        System.out.println("kdUV: " + kdUV);
-        System.out.println("卡顿率: " + (float) kdUV / UV);
-        System.out.println("DurationSum: " + videoViewLoadDurationSum);
-        System.out.println("ValidReq: " + validReqCount);
-        System.out.println("首帧加载时长: " + videoViewLoadDurationSum / validReqCount);
-        System.out.println("error: " + errorCount);
-        System.out.println("错误率: " + (float) errorCount / reqCount);
+            System.out.println(localDateTime.toString());
+            System.out.println("UV: " + UV);
+            System.out.println("kdUV: " + kdUV);
+            System.out.println("卡顿率: " + (float) kdUV / UV);
+//            System.out.println("DurationSum: " + videoViewLoadDurationSum);
+//            System.out.println("ValidReq: " + validReqCount);
+            System.out.println("首帧加载时长 (ms): " + videoViewLoadDurationSum / validReqCount);
+            System.out.println("error: " + errorCount);
+            System.out.println("错误率: " + (float) errorCount / reqCount);
+            System.out.println("----------------------");
+            logSet.clear();
+            kdLogSet.clear();
+            errorLogs.clear();
+        }
     }
 
 //    "logs/qncdnbb_20190521_14.json.gz";
