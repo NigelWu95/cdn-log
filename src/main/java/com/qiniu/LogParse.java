@@ -48,17 +48,9 @@ public class LogParse {
             long videoViewLoadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
 //                logs.parallelStream().collect(Collectors.summarizingLong(MPLog::getVideoViewLoadDuration)).getSum();
             long errorCount = errorLogs.size();
-
-            System.out.println(localDateTime.toString());
-            System.out.println("UV: " + UV);
-            System.out.println("kdUV: " + kdUV);
-            System.out.println("卡顿率: " + (float) kdUV / UV);
-//            System.out.println("DurationSum: " + videoViewLoadDurationSum);
-//            System.out.println("ValidReq: " + validReqCount);
-            System.out.println("首帧加载时长 (ms): " + videoViewLoadDurationSum / validReqCount);
-            System.out.println("error: " + errorCount);
-            System.out.println("错误率: " + (float) errorCount / reqCount);
-            System.out.println("----------------------");
+            Statistics statistics = new Statistics(localDateTime, reqCount, videoViewLoadDurationSum, validReqCount,
+                    UV, kdUV, errorCount);
+            System.out.println(statistics);
             logSet.clear();
             kdLogSet.clear();
             errorLogs.clear();
