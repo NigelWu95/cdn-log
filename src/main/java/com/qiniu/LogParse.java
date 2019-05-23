@@ -3,6 +3,7 @@ package com.qiniu;
 import com.alibaba.fastjson.JSON;
 
 import java.io.*;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -12,15 +13,34 @@ public class LogParse {
 
     private static final int BUFFER_SIZE = 1024;
 
-    public static void main(String[] args) throws Exception {
-        LogParse logParse = new LogParse();
+    public static void main(String[] args) throws IOException {
+
         String file = "logs/qncdnbb_20190521_14.json.gz";
 //        System.out.println(logParse.readAll(file));
-        List<MPLog> logs = logParse.readAllTo(file);
-//        System.out.println(logs);
+        List<MPLog> logs = readAllTo(file);
 //        for (MPLog log : logs) {
 //            System.out.println(log.getError() + "\t" + log.getHttpCode());
 //        }
+        List<Statistics> statistics = getStatistics(logs);
+        for (Statistics statistic : statistics) {
+            System.out.println(statistic);
+        }
+    }
+
+    public static List<Statistics> getStatistics(String file) throws IOException {
+        return getStatistics(readAllTo(file));
+    }
+
+    public static List<Statistics> getStatistics(URL url) throws IOException {
+        return getStatistics(readAllTo(url));
+    }
+
+    public static List<Statistics> getStatistics(InputStream inputStream) throws IOException {
+        return getStatistics(readAllTo(inputStream));
+    }
+
+    public static List<Statistics> getStatistics(List<MPLog> logs) {
+        List<Statistics> statistics = new ArrayList<>();
         Set<MPLog> logSet = new HashSet<>();
         Set<MPLog> kdLogSet = new HashSet<>();
         List<MPLog> errorLogs = new ArrayList<>();
@@ -48,26 +68,23 @@ public class LogParse {
             long videoViewLoadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
 //                logs.parallelStream().collect(Collectors.summarizingLong(MPLog::getVideoViewLoadDuration)).getSum();
             long errorCount = errorLogs.size();
-            Statistics statistics = new Statistics(localDateTime, reqCount, videoViewLoadDurationSum, validReqCount,
-                    UV, kdUV, errorCount);
-            System.out.println(statistics);
+            statistics.add(new Statistics(localDateTime, reqCount, videoViewLoadDurationSum, validReqCount, UV, kdUV, errorCount));
             logSet.clear();
             kdLogSet.clear();
             errorLogs.clear();
         }
+        return statistics;
     }
 
-//    "logs/qncdnbb_20190521_14.json.gz";
-    public String readAll(String file) throws IOException {
+    public static String readAll(InputStream inputStream) throws IOException {
         String result;
-        GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(file));
+        GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] buf = new byte[BUFFER_SIZE];
         int len = gzipInputStream.read(buf, 0, BUFFER_SIZE);
         try {
             while(len != -1) {
                 baos.write(buf, 0, len);
-//                baos.reset();
                 len = gzipInputStream.read(buf, 0, BUFFER_SIZE);
             }
         } catch (IOException e) {
@@ -78,15 +95,26 @@ public class LogParse {
                 gzipInputStream.close();
                 baos.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                gzipInputStream = null;
+                baos = null;
             }
         }
         return result;
     }
 
-    public List<MPLog> readAllTo(String file) throws IOException {
-        FileInputStream fileInputStream = new FileInputStream(file);
-        GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
+    public static String readAll(String file) throws IOException {
+        FileInputStream inputStream = new FileInputStream(file);
+        String content = readAll(inputStream);
+        try {
+            inputStream.close();
+        } catch (IOException e) {
+            inputStream = null;
+        }
+        return content;
+    }
+
+    public static List<MPLog> readAllTo(InputStream inputStream) throws IOException {
+        GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
         InputStreamReader inputStreamReader = new InputStreamReader(gzipInputStream);
         BufferedReader reader = new BufferedReader(inputStreamReader);
         String line;
@@ -101,7 +129,29 @@ public class LogParse {
             reader.close();
             inputStreamReader.close();
             gzipInputStream.close();
-            fileInputStream.close();
+            inputStream.close();
+        }
+        return mpLogs;
+    }
+
+    public static List<MPLog> readAllTo(String file) throws IOException {
+        FileInputStream inputStream = new FileInputStream(file);
+        List<MPLog> mpLogs = readAllTo(inputStream);
+        try {
+            inputStream.close();
+        } catch (IOException e) {
+            inputStream = null;
+        }
+        return mpLogs;
+    }
+
+    public static List<MPLog> readAllTo(URL url) throws IOException {
+        InputStream inputStream = url.openStream();
+        List<MPLog> mpLogs = readAllTo(inputStream);
+        try {
+            inputStream.close();
+        } catch (IOException e) {
+            inputStream = null;
         }
         return mpLogs;
     }
