@@ -16,4 +16,17 @@ public class DatetimeUtils {
     public static LocalDateTime groupedTimeBy5Min(long timestamp) {
         return LocalDateTime.ofInstant(Instant.ofEpochSecond((timestamp / 300 + 1) * 300), defaultZoneId);
     }
+
+    public static String getDateTimeHour(LocalDateTime localDateTime) {
+        StringBuilder datetimeString = new StringBuilder();
+        datetimeString.append(localDateTime.getYear());
+        if (localDateTime.getMonthValue() < 10) datetimeString.append(0);
+        datetimeString.append(localDateTime.getMonthValue());
+        if (localDateTime.getDayOfMonth() < 10) datetimeString.append(0);
+        datetimeString.append(localDateTime.getDayOfMonth());
+        datetimeString.append("_");
+        if (localDateTime.getHour() < 10) datetimeString.append(0);
+        datetimeString.append(localDateTime.getHour());
+        return datetimeString.toString();
+    }
 }

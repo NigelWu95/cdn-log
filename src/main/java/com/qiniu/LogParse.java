@@ -11,8 +11,6 @@ import java.util.zip.GZIPInputStream;
 
 public class LogParse {
 
-    private static final int BUFFER_SIZE = 1024;
-
     public static void main(String[] args) throws IOException {
 
         String file = "logs/qncdnbb_20190521_14.json.gz";
@@ -80,12 +78,12 @@ public class LogParse {
         String result;
         GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[BUFFER_SIZE];
-        int len = gzipInputStream.read(buf, 0, BUFFER_SIZE);
+        byte[] buf = new byte[1024];
+        int len = gzipInputStream.read(buf, 0, 1024);
         try {
             while(len != -1) {
                 baos.write(buf, 0, len);
-                len = gzipInputStream.read(buf, 0, BUFFER_SIZE);
+                len = gzipInputStream.read(buf, 0, 1024);
             }
         } catch (IOException e) {
             e.printStackTrace();

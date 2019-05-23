@@ -12,8 +12,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.time.*;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class LogFetch {
 
@@ -21,12 +22,12 @@ public class LogFetch {
 
         Config config = Config.getInstance();
         // http://cdnlog.bbobo.com/fd8c30aad0/qncdnbb_YYYYMMDD_HH.json.gz
-        String url = config.getValue("url");
-        String pattern = config.getValue("pattern");
+        String urlPattern = config.getValue("url-pattern");
+        String replaced = config.getValue("replaced");
         String startTime = config.getValue("start-time");
         String endTime = config.getValue("end-time");
         LogFetch logFetch = new LogFetch();
-        Set<String> logs = logFetch.getLogs(pattern, startTime, endTime);
+        List<String> logs = logFetch.getLogUrls(urlPattern, replaced, startTime, endTime);
         String saveTo = config.getValue("save-to");
         if (saveTo.equals("qiniu")) {
             String accessKey = config.getValue("ak");
@@ -37,10 +38,9 @@ public class LogFetch {
             configuration.connectTimeout = 120;
             configuration.readTimeout = 60;
             BucketManager bucketManager = new BucketManager(auth, configuration);
-            for (String log : logs) {
+            for (String url : logs) {
                 while (true) {
                     try {
-                        url += log;
                         System.out.println(url + "\t" + bucketManager
                                 .fetch(url, bucket, url.substring(url.lastIndexOf("/") + 1)).key);
                         break;
@@ -54,8 +54,7 @@ public class LogFetch {
             File file = new File(saveTo);
             if (file.exists() && file.isDirectory()) {
                 String fileName;
-                for (String log : logs) {
-                    url += log;
+                for (String url : logs) {
                     fileName = FilenameUtils.concat(saveTo, url.substring(url.lastIndexOf("/") + 1));
                     System.out.println(fileName);
                     try {
@@ -69,13 +68,13 @@ public class LogFetch {
                 boolean flag = file.createNewFile();
                 if (!flag) throw new IOException("create new file: " + saveTo + " failed.");
                 FileWriter fileWriter = new FileWriter(file);
-                for (String log : logs) fileWriter.write(url + log + "\n");
+                fileWriter.write(String.join("\n", logs));
                 fileWriter.close();
             }
         }
     }
 
-    public Set<String> getLogs(String pattern, String startTime, String endTime) {
+    public List<String> getLogUrls(String urlPattern, String replaced, String startTime, String endTime) {
         String[] startDatetime = startTime.split("_");
         int startYear = Integer.valueOf(startDatetime[0].substring(0, 4));
         int startMonth = Integer.valueOf(startDatetime[0].substring(4, 6));
@@ -90,10 +89,14 @@ public class LogFetch {
                 LocalDate.of(startYear, startMonth, startDay), LocalTime.of(startHour, 0));
         LocalDateTime endLocalDateTime = LocalDateTime.of(
                 LocalDate.of(endYear, endMonth, endDay), LocalTime.of(endHour, 0));
+        List<String> dateTimeHours = getDateTimeHours(startLocalDateTime, endLocalDateTime);
+        return dateTimeHours.stream().map(dateTimeHour -> urlPattern.replace(replaced, dateTimeHour)).collect(Collectors.toList());
+    }
+
+    public List<String> getDateTimeHours(LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
         LocalDateTime localDateTime = startLocalDateTime;
         StringBuilder datetimeString = new StringBuilder();
-        String log;
-        Set<String> logs = new HashSet<>();
+        List<String> dateTimeHours = new ArrayList<>();
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             datetimeString.append(localDateTime.getYear());
             if (localDateTime.getMonthValue() < 10) datetimeString.append(0);
@@ -103,11 +106,10 @@ public class LogFetch {
             datetimeString.append("_");
             if (localDateTime.getHour() < 10) datetimeString.append(0);
             datetimeString.append(localDateTime.getHour());
-            log = pattern.replace("YYYYMMDD_HH", datetimeString.toString());
-            logs.add(log);
+            dateTimeHours.add(datetimeString.toString());
             datetimeString.delete(0, datetimeString.length());
             localDateTime = localDateTime.plusHours(1);
         }
-        return logs;
+        return dateTimeHours;
     }
 }
