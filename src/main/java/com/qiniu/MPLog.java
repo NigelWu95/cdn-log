@@ -8,16 +8,16 @@ public class MPLog {
 
     private String uDid;
     private String vName;
-    private String time;
+    private long time;
     private String url;
     private String ip;
     private String serverIp;
     private int httpCode;
-    private String error;
-    private int videoViewLoadDuration;
-    private int bufTimes;
-    private int bufTimes2;
-    private int bufAllTime;
+    private int error;
+    private long videoViewLoadDuration;
+    private long bufTimes;
+    private long bufTimes2;
+    private long bufAllTime;
     private String country;
     private String province;
     private String city;
@@ -39,11 +39,11 @@ public class MPLog {
         this.vName = vName;
     }
 
-    public String getTime() {
+    public long getTime() {
         return time;
     }
 
-    public void setTime(String time) {
+    public void setTime(long time) {
         this.time = time;
     }
 
@@ -79,43 +79,43 @@ public class MPLog {
         this.httpCode = httpCode;
     }
 
-    public String getError() {
+    public int getError() {
         return error;
     }
 
-    public void setError(String error) {
+    public void setError(int error) {
         this.error = error;
     }
 
-    public int getVideoViewLoadDuration() {
+    public long getVideoViewLoadDuration() {
         return videoViewLoadDuration;
     }
 
-    public void setVideoViewLoadDuration(int videoViewLoadDuration) {
+    public void setVideoViewLoadDuration(long videoViewLoadDuration) {
         this.videoViewLoadDuration = videoViewLoadDuration;
     }
 
-    public int getBufTimes() {
+    public long getBufTimes() {
         return bufTimes;
     }
 
-    public void setBufTimes(int bufTimes) {
+    public void setBufTimes(long bufTimes) {
         this.bufTimes = bufTimes;
     }
 
-    public int getBufTimes2() {
+    public long getBufTimes2() {
         return bufTimes2;
     }
 
-    public void setBufTimes2(int bufTimes2) {
+    public void setBufTimes2(long bufTimes2) {
         this.bufTimes2 = bufTimes2;
     }
 
-    public int getBufAllTime() {
+    public long getBufAllTime() {
         return bufAllTime;
     }
 
-    public void setBufAllTime(int bufAllTime) {
+    public void setBufAllTime(long bufAllTime) {
         this.bufAllTime = bufAllTime;
     }
 
