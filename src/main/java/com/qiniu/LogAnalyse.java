@@ -11,20 +11,6 @@ import java.util.zip.GZIPInputStream;
 
 public class LogAnalyse {
 
-    public static void main(String[] args) throws IOException {
-
-        String file = "logs/qncdnbb_20190521_14.json.gz";
-//        System.out.println(logParse.readAll(file));
-        List<MPLog> logs = readToLogs(file);
-//        for (MPLog log : logs) {
-//            System.out.println(log.getError() + "\t" + log.getHttpCode());
-//        }
-        List<Statistics> statistics = getStatistics(logs);
-        for (Statistics statistic : statistics) {
-            System.out.println(statistic);
-        }
-    }
-
     public static List<Statistics> getStatistics(String file) throws IOException {
         return getStatistics(readToLogs(file));
     }

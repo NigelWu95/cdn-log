@@ -12,7 +12,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.time.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,8 +25,12 @@ public class LogFetch {
         String replaced = config.getValue("replaced");
         String startTime = config.getValue("start-time");
         String endTime = config.getValue("end-time");
-        LogFetch logFetch = new LogFetch();
-        List<String> logs = logFetch.getLogUrls(urlPattern, replaced, startTime, endTime);
+        LocalDateTime startLocalDateTime = DatetimeUtils.parse(startTime);
+        LocalDateTime endLocalDateTime = DatetimeUtils.parse(endTime);
+        List<String> dateTimeHours = DatetimeUtils.getDateTimeHours(startLocalDateTime, endLocalDateTime);
+        List<String> logs = dateTimeHours.stream()
+                .map(dateTimeHour -> urlPattern.replace(replaced, dateTimeHour))
+                .collect(Collectors.toList());
         String saveTo = config.getValue("save-to");
         if (saveTo.equals("qiniu")) {
             String accessKey = config.getValue("ak");
@@ -72,44 +75,5 @@ public class LogFetch {
                 fileWriter.close();
             }
         }
-    }
-
-    public List<String> getLogUrls(String urlPattern, String replaced, String startTime, String endTime) {
-        String[] startDatetime = startTime.split("_");
-        int startYear = Integer.valueOf(startDatetime[0].substring(0, 4));
-        int startMonth = Integer.valueOf(startDatetime[0].substring(4, 6));
-        int startDay = Integer.valueOf(startDatetime[0].substring(6, 8));
-        int startHour = Integer.valueOf(startDatetime[1]);
-        String[] endDatetime = endTime.split("_");
-        int endYear = Integer.valueOf(endDatetime[0].substring(0, 4));
-        int endMonth = Integer.valueOf(endDatetime[0].substring(4, 6));
-        int endDay = Integer.valueOf(endDatetime[0].substring(6, 8));
-        int endHour = Integer.valueOf(endDatetime[1]);
-        LocalDateTime startLocalDateTime = LocalDateTime.of(
-                LocalDate.of(startYear, startMonth, startDay), LocalTime.of(startHour, 0));
-        LocalDateTime endLocalDateTime = LocalDateTime.of(
-                LocalDate.of(endYear, endMonth, endDay), LocalTime.of(endHour, 0));
-        List<String> dateTimeHours = getDateTimeHours(startLocalDateTime, endLocalDateTime);
-        return dateTimeHours.stream().map(dateTimeHour -> urlPattern.replace(replaced, dateTimeHour)).collect(Collectors.toList());
-    }
-
-    public List<String> getDateTimeHours(LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
-        LocalDateTime localDateTime = startLocalDateTime;
-        StringBuilder datetimeString = new StringBuilder();
-        List<String> dateTimeHours = new ArrayList<>();
-        while (localDateTime.compareTo(endLocalDateTime) <= 0) {
-            datetimeString.append(localDateTime.getYear());
-            if (localDateTime.getMonthValue() < 10) datetimeString.append(0);
-            datetimeString.append(localDateTime.getMonthValue());
-            if (localDateTime.getDayOfMonth() < 10) datetimeString.append(0);
-            datetimeString.append(localDateTime.getDayOfMonth());
-            datetimeString.append("_");
-            if (localDateTime.getHour() < 10) datetimeString.append(0);
-            datetimeString.append(localDateTime.getHour());
-            dateTimeHours.add(datetimeString.toString());
-            datetimeString.delete(0, datetimeString.length());
-            localDateTime = localDateTime.plusHours(1);
-        }
-        return dateTimeHours;
     }
 }
