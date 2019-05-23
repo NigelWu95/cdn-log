@@ -1,5 +1,9 @@
 package com.qiniu;
 
+import com.alibaba.fastjson.JSON;
+
+import java.util.Objects;
+
 public class MPLog {
 
     private String uDid;
@@ -145,5 +149,27 @@ public class MPLog {
 
     public void setIsp(String isp) {
         this.isp = isp;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uDid);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        MPLog mpLog = (MPLog) o;
+        return Objects.equals(uDid, mpLog.uDid);
+    }
+
+    @Override
+    public String toString() {
+        return JSON.toJSONString(this);
     }
 }
