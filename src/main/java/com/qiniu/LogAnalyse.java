@@ -9,13 +9,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-public class LogParse {
+public class LogAnalyse {
 
     public static void main(String[] args) throws IOException {
 
         String file = "logs/qncdnbb_20190521_14.json.gz";
 //        System.out.println(logParse.readAll(file));
-        List<MPLog> logs = readAllTo(file);
+        List<MPLog> logs = readToLogs(file);
 //        for (MPLog log : logs) {
 //            System.out.println(log.getError() + "\t" + log.getHttpCode());
 //        }
@@ -26,15 +26,15 @@ public class LogParse {
     }
 
     public static List<Statistics> getStatistics(String file) throws IOException {
-        return getStatistics(readAllTo(file));
+        return getStatistics(readToLogs(file));
     }
 
     public static List<Statistics> getStatistics(URL url) throws IOException {
-        return getStatistics(readAllTo(url));
+        return getStatistics(readToLogs(url));
     }
 
     public static List<Statistics> getStatistics(InputStream inputStream) throws IOException {
-        return getStatistics(readAllTo(inputStream));
+        return getStatistics(readToLogs(inputStream));
     }
 
     public static List<Statistics> getStatistics(List<MPLog> logs) {
@@ -111,7 +111,7 @@ public class LogParse {
         return content;
     }
 
-    public static List<MPLog> readAllTo(InputStream inputStream) throws IOException {
+    public static List<MPLog> readToLogs(InputStream inputStream) throws IOException {
         GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
         InputStreamReader inputStreamReader = new InputStreamReader(gzipInputStream);
         BufferedReader reader = new BufferedReader(inputStreamReader);
@@ -132,9 +132,9 @@ public class LogParse {
         return mpLogs;
     }
 
-    public static List<MPLog> readAllTo(String file) throws IOException {
+    public static List<MPLog> readToLogs(String file) throws IOException {
         FileInputStream inputStream = new FileInputStream(file);
-        List<MPLog> mpLogs = readAllTo(inputStream);
+        List<MPLog> mpLogs = readToLogs(inputStream);
         try {
             inputStream.close();
         } catch (IOException e) {
@@ -143,9 +143,9 @@ public class LogParse {
         return mpLogs;
     }
 
-    public static List<MPLog> readAllTo(URL url) throws IOException {
+    public static List<MPLog> readToLogs(URL url) throws IOException {
         InputStream inputStream = url.openStream();
-        List<MPLog> mpLogs = readAllTo(inputStream);
+        List<MPLog> mpLogs = readToLogs(inputStream);
         try {
             inputStream.close();
         } catch (IOException e) {

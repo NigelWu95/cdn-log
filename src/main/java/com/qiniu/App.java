@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class App {
 
@@ -27,5 +29,17 @@ public class App {
         LocalDateTime endLocalDateTime = LocalDateTime.of(
                 LocalDate.of(endYear, endMonth, endDay), LocalTime.of(endHour, 0));
         LocalDateTime localDateTime = startLocalDateTime;
+        String urlPattern = config.getValue("url-pattern");
+        String replaced = config.getValue("replaced");
+        String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
+        String fileName = "logs/" + url.substring(url.lastIndexOf("/") + 1);
+        List<MPLog> logs = LogAnalyse.readToLogs(fileName);
+        url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime.plusHours(1)));
+        fileName = "logs/" + url.substring(url.lastIndexOf("/") + 1);
+        logs.addAll(LogAnalyse.readToLogs(fileName));
+        List<Statistics> statisticsList = LogAnalyse.getStatistics(logs).stream()
+                .filter(statistics -> statistics.getPointTime().compareTo(localDateTime.plusSeconds(3600)) <= 0)
+                .collect(Collectors.toList());
+        for (Statistics statistic : statisticsList) System.out.println(statistic);
     }
 }
