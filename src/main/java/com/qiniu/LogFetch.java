@@ -21,11 +21,12 @@ public class LogFetch {
 
         Config config = Config.getInstance();
         // http://cdnlog.bbobo.com/fd8c30aad0/qncdnbb_YYYYMMDD_HH.json.gz
-        String urlPattern = config.getValue("url");
+        String url = config.getValue("url");
+        String pattern = config.getValue("pattern");
         String startTime = config.getValue("start-time");
         String endTime = config.getValue("end-time");
         LogFetch logFetch = new LogFetch();
-        Set<String> urls = logFetch.getLogUrls(urlPattern, startTime, endTime);
+        Set<String> logs = logFetch.getLogs(pattern, startTime, endTime);
         String saveTo = config.getValue("save-to");
         if (saveTo.equals("qiniu")) {
             String accessKey = config.getValue("ak");
@@ -36,11 +37,12 @@ public class LogFetch {
             configuration.connectTimeout = 120;
             configuration.readTimeout = 60;
             BucketManager bucketManager = new BucketManager(auth, configuration);
-            for (String url : urls) {
+            for (String log : logs) {
                 while (true) {
                     try {
-                        System.out.println(url + "\t" +
-                                bucketManager.fetch(url, bucket, url.substring(url.lastIndexOf("/") + 1)).key);
+                        url += log;
+                        System.out.println(url + "\t" + bucketManager
+                                .fetch(url, bucket, url.substring(url.lastIndexOf("/") + 1)).key);
                         break;
                     } catch (QiniuException e) {
                         if (e.code() == 404) break;
@@ -52,7 +54,8 @@ public class LogFetch {
             File file = new File(saveTo);
             if (file.exists() && file.isDirectory()) {
                 String fileName;
-                for (String url : urls) {
+                for (String log : logs) {
+                    url += log;
                     fileName = FilenameUtils.concat(saveTo, url.substring(url.lastIndexOf("/") + 1));
                     System.out.println(fileName);
                     try {
@@ -66,13 +69,13 @@ public class LogFetch {
                 boolean flag = file.createNewFile();
                 if (!flag) throw new IOException("create new file: " + saveTo + " failed.");
                 FileWriter fileWriter = new FileWriter(file);
-                fileWriter.write(String.join("\n", urls));
+                for (String log : logs) fileWriter.write(url + log + "\n");
                 fileWriter.close();
             }
         }
     }
 
-    public Set<String> getLogUrls(String urlPattern, String startTime, String endTime) {
+    public Set<String> getLogs(String pattern, String startTime, String endTime) {
         String[] startDatetime = startTime.split("_");
         int startYear = Integer.valueOf(startDatetime[0].substring(0, 4));
         int startMonth = Integer.valueOf(startDatetime[0].substring(4, 6));
@@ -89,8 +92,8 @@ public class LogFetch {
                 LocalDate.of(endYear, endMonth, endDay), LocalTime.of(endHour, 0));
         LocalDateTime localDateTime = startLocalDateTime;
         StringBuilder datetimeString = new StringBuilder();
-        String url;
-        Set<String> logUrls = new HashSet<>();
+        String log;
+        Set<String> logs = new HashSet<>();
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             datetimeString.append(localDateTime.getYear());
             if (localDateTime.getMonthValue() < 10) datetimeString.append(0);
@@ -100,11 +103,11 @@ public class LogFetch {
             datetimeString.append("_");
             if (localDateTime.getHour() < 10) datetimeString.append(0);
             datetimeString.append(localDateTime.getHour());
-            url = urlPattern.replace("YYYYMMDD_HH", datetimeString.toString());
-            logUrls.add(url);
+            log = pattern.replace("YYYYMMDD_HH", datetimeString.toString());
+            logs.add(log);
             datetimeString.delete(0, datetimeString.length());
             localDateTime = localDateTime.plusHours(1);
         }
-        return logUrls;
+        return logs;
     }
 }
