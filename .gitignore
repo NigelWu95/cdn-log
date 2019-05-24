@@ -6,3 +6,4 @@ out/
 
 src/resources/.config.properties
 logs/
+statistics/
