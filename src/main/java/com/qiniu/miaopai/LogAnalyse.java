@@ -1,27 +1,57 @@
 package com.qiniu.miaopai;
 
-import com.alibaba.fastjson.JSON;
+import com.qiniu.common.Config;
+import com.qiniu.statements.CsvReporter;
 import com.qiniu.util.DatetimeUtils;
+import com.qiniu.util.LogFileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 
 public class LogAnalyse {
 
+    private String startTime;
+    private String endTime;
+    private LocalDateTime startLocalDateTime;
+    private LocalDateTime endLocalDateTime;
+    private String urlPattern;
+    private String replaced;
+
+    public LogAnalyse(Config config) throws IOException {
+        this.startTime = config.getValue("start-time");
+        this.endTime = config.getValue("end-time");
+        this.startLocalDateTime = DatetimeUtils.parse(startTime);
+        this.endLocalDateTime = DatetimeUtils.parse(endTime);
+        this.urlPattern = config.getValue("url-pattern");
+        this.replaced = config.getValue("replaced");
+    }
+
+    public LocalDateTime getStartLocalDateTime() {
+        return startLocalDateTime;
+    }
+
+    public LocalDateTime getEndLocalDateTime() {
+        return endLocalDateTime;
+    }
+
+    public String getRealUrl(String dateTimeHour) {
+        return urlPattern.replace(replaced, dateTimeHour);
+    }
+
     public static List<Statistics> getStatistics(String file) throws IOException {
-        return getStatistics(readToLogs(file));
+        return getStatistics(LogFileUtils.readLogsFrom(file));
     }
 
     public static List<Statistics> getStatistics(URL url) throws IOException {
-        return getStatistics(readToLogs(url));
+        return getStatistics(LogFileUtils.readLogsFrom(url));
     }
 
     public static List<Statistics> getStatistics(InputStream inputStream) throws IOException {
-        return getStatistics(readToLogs(inputStream));
+        return getStatistics(LogFileUtils.readLogsFrom(inputStream));
     }
 
     public static List<Statistics> getStatistics(List<MPLog> logs) {
@@ -61,83 +91,49 @@ public class LogAnalyse {
         return statistics;
     }
 
-    public static String readAll(InputStream inputStream) throws IOException {
-        String result;
-        GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024];
-        int len = gzipInputStream.read(buf, 0, 1024);
-        try {
-            while(len != -1) {
-                baos.write(buf, 0, len);
-                len = gzipInputStream.read(buf, 0, 1024);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            result = baos.toString();
+    public void analyseLogs() throws IOException {
+        LocalDateTime localDateTime = startLocalDateTime;
+        String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
+        String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
+        List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
+        String[] headers = new String[]{"时间点", "总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
+        CsvReporter csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv", headers);
+        while (localDateTime.compareTo(endLocalDateTime) <= 0) {
+            LocalDateTime nextDateTime = localDateTime.plusHours(1);
+            url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
+            fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
+            List<MPLog> nextPhraseLogs;
             try {
-                gzipInputStream.close();
-                baos.close();
+                nextPhraseLogs = LogFileUtils.readLogsFrom(fileName);
             } catch (IOException e) {
-                gzipInputStream = null;
-                baos = null;
+                e.printStackTrace();
+                nextPhraseLogs = new ArrayList<>();
             }
-        }
-        return result;
-    }
-
-    public static String readAll(String file) throws IOException {
-        FileInputStream inputStream = new FileInputStream(file);
-        String content = readAll(inputStream);
-        try {
-            inputStream.close();
-        } catch (IOException e) {
-            inputStream = null;
-        }
-        return content;
-    }
-
-    public static List<MPLog> readToLogs(InputStream inputStream) throws IOException {
-        GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream);
-        InputStreamReader inputStreamReader = new InputStreamReader(gzipInputStream);
-        BufferedReader reader = new BufferedReader(inputStreamReader);
-        String line;
-        List<MPLog> mpLogs = new ArrayList<>();
-        try {
-            while ((line = reader.readLine()) != null) {
-                mpLogs.add(JSON.parseObject(line, MPLog.class));
+            logs.addAll(nextPhraseLogs);
+            LocalDateTime finalLocalDateTime = localDateTime;
+            List<Statistics> statisticsList = LogAnalyse.getStatistics(logs).stream()
+                    .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
+                            statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
+                    .sorted(Comparator.comparing(Statistics::getPointTime))
+                    .collect(Collectors.toList());
+            for (Statistics statistic : statisticsList) {
+                List<String> values = new ArrayList<String>(){{
+                    add(String.valueOf(statistic.getPointTime().toString()));
+                    add(String.valueOf(statistic.getReqCount()));
+                    add(String.valueOf(statistic.getCartonRate()));
+                    add(String.valueOf(statistic.getValidLoadDurationAvg()));
+                    add(String.valueOf(statistic.getErrorRate()));
+                }};
+                csvReporter.insertData(values);
             }
+            System.out.println(fileName + " finished");
+            logs = nextPhraseLogs;
+            localDateTime = nextDateTime;
+        }
+        try {
+            csvReporter.close();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            reader.close();
-            inputStreamReader.close();
-            gzipInputStream.close();
-            inputStream.close();
         }
-        return mpLogs;
-    }
-
-    public static List<MPLog> readToLogs(String file) throws IOException {
-        FileInputStream inputStream = new FileInputStream(file);
-        List<MPLog> mpLogs = readToLogs(inputStream);
-        try {
-            inputStream.close();
-        } catch (IOException e) {
-            inputStream = null;
-        }
-        return mpLogs;
-    }
-
-    public static List<MPLog> readToLogs(URL url) throws IOException {
-        InputStream inputStream = url.openStream();
-        List<MPLog> mpLogs = readToLogs(inputStream);
-        try {
-            inputStream.close();
-        } catch (IOException e) {
-            inputStream = null;
-        }
-        return mpLogs;
     }
 }
