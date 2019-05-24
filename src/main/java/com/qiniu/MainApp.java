@@ -4,6 +4,7 @@ import com.qiniu.common.Config;
 import com.qiniu.miaopai.LogAnalyse;
 import com.qiniu.miaopai.Statistics;
 import com.qiniu.statements.CsvReporter;
+import com.qiniu.statements.DataReporter;
 import com.qiniu.util.LogFileUtils;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
@@ -13,6 +14,7 @@ import com.qiniu.util.StatisticsUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,7 @@ public class MainApp {
         List<String> dateTimeHours = DatetimeUtils.getDateTimeHours(startLocalDateTime, endLocalDateTime);
         List<String> logUrls = dateTimeHours.stream().map(dateTimeHour -> urlPattern.replace(replaced, dateTimeHour))
                 .collect(Collectors.toList());
+        DataReporter csvReporter = null;
         String goal = config.getValue("goal");
         if (goal.equals("fetch")) {
             String accessKey = config.getValue("ak");
@@ -45,10 +48,15 @@ public class MainApp {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
             List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-            CsvReporter csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
+            csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
             StatisticsUtils.exportDataTo(statisticsList, csvReporter);
         } else {
             LogFileUtils.listLogs(logUrls, goal);
+        }
+        try {
+            if (csvReporter != null) csvReporter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

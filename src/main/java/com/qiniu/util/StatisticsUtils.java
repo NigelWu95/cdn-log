@@ -22,10 +22,5 @@ public class StatisticsUtils {
             }};
             dataReporter.insertData(values);
         }
-        try {
-            dataReporter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
