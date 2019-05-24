@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public class Statistics {
 
+    private String province;
     private LocalDateTime pointTime;
     private long reqCount;
     private long loadDurationSum;
@@ -31,14 +32,13 @@ public class Statistics {
         this.errorRate = (float) errorCount / reqCount;
     }
 
-    public Statistics(LocalDateTime pointTime, long reqCount, long validReqCount, float loadDurationAvg, float cartonRate,
-                      float errorRate) {
-        this.pointTime = pointTime;
-        this.reqCount = reqCount;
-        this.validReqCount = validReqCount;
-        this.loadDurationAvg = loadDurationAvg / validReqCount;
-        this.cartonRate = cartonRate / reqCount;
-        this.errorRate = (float) errorCount / reqCount;
+    public String getProvince() {
+        return province;
+    }
+
+    public Statistics withProvince(String province) {
+        this.province = province;
+        return this;
     }
 
     public LocalDateTime getPointTime() {
