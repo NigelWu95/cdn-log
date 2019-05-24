@@ -1,9 +1,11 @@
-package com.qiniu;
+package com.qiniu.miaopai;
 
+import com.qiniu.common.Config;
 import com.qiniu.common.QiniuException;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
 import com.qiniu.util.Auth;
+import com.qiniu.util.DatetimeUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 

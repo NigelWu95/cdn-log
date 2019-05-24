@@ -1,4 +1,4 @@
-package com.qiniu;
+package com.qiniu.common;
 
 import java.io.*;
 import java.util.Properties;
