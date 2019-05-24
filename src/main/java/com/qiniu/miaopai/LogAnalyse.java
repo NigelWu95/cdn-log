@@ -1,6 +1,5 @@
 package com.qiniu.miaopai;
 
-import com.qiniu.statements.DataReporter;
 import com.qiniu.util.DatetimeUtils;
 import com.qiniu.util.LogFileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -12,30 +11,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class LogAnalyse {
-
-    private LocalDateTime startLocalDateTime;
-    private LocalDateTime endLocalDateTime;
-    private String urlPattern;
-    private String replaced;
-
-    public LogAnalyse(LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime, String urlPattern, String replaced) {
-        this.startLocalDateTime = startLocalDateTime;
-        this.endLocalDateTime = endLocalDateTime;
-        this.urlPattern = urlPattern;
-        this.replaced = replaced;
-    }
-
-    public LocalDateTime getStartLocalDateTime() {
-        return startLocalDateTime;
-    }
-
-    public LocalDateTime getEndLocalDateTime() {
-        return endLocalDateTime;
-    }
-
-    public String getRealUrl(String dateTimeHour) {
-        return urlPattern.replace(replaced, dateTimeHour);
-    }
 
     public static List<Statistics> getStatistics(String file) throws IOException {
         return getStatistics(LogFileUtils.readLogsFrom(file));
@@ -86,13 +61,13 @@ public class LogAnalyse {
         return statistics;
     }
 
-    public void analyseLogs(DataReporter dataReporter) throws IOException {
+    public static List<Statistics> getAllStatistics(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
+                                             LocalDateTime endLocalDateTime) throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
         List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
-        String[] headers = new String[]{"时间点", "总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
-        dataReporter.setHeaders(headers);
+        List<Statistics> statisticsList = new ArrayList<>();
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             LocalDateTime nextDateTime = localDateTime.plusHours(1);
             url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
@@ -106,24 +81,15 @@ public class LogAnalyse {
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            List<Statistics> statisticsList = LogAnalyse.getStatistics(logs).stream()
+            statisticsList.addAll(LogAnalyse.getStatistics(logs).stream()
                     .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
                     .sorted(Comparator.comparing(Statistics::getPointTime))
-                    .collect(Collectors.toList());
-            for (Statistics statistic : statisticsList) {
-                List<String> values = new ArrayList<String>(){{
-                    add(String.valueOf(statistic.getPointTime().toString()));
-                    add(String.valueOf(statistic.getReqCount()));
-                    add(String.valueOf(statistic.getCartonRate()));
-                    add(String.valueOf(statistic.getValidLoadDurationAvg()));
-                    add(String.valueOf(statistic.getErrorRate()));
-                }};
-                dataReporter.insertData(values);
-            }
+                    .collect(Collectors.toList()));
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;
             localDateTime = nextDateTime;
         }
+        return statisticsList;
     }
 }

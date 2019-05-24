@@ -2,6 +2,7 @@ package com.qiniu;
 
 import com.qiniu.common.Config;
 import com.qiniu.miaopai.LogAnalyse;
+import com.qiniu.miaopai.Statistics;
 import com.qiniu.statements.CsvReporter;
 import com.qiniu.util.LogFileUtils;
 import com.qiniu.storage.BucketManager;
@@ -11,6 +12,7 @@ import com.qiniu.util.DatetimeUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,10 +28,9 @@ public class MainApp {
         String urlPattern = config.getValue("url-pattern");
         String replaced = config.getValue("replaced");
         CsvReporter csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
-        LogAnalyse logAnalyse = new LogAnalyse(startLocalDateTime, endLocalDateTime, urlPattern, replaced);
-        List<String> dateTimeHours = DatetimeUtils.getDateTimeHours(logAnalyse.getStartLocalDateTime(),
-                logAnalyse.getEndLocalDateTime());
-        List<String> logUrls = dateTimeHours.stream().map(logAnalyse::getRealUrl).collect(Collectors.toList());
+        List<String> dateTimeHours = DatetimeUtils.getDateTimeHours(startLocalDateTime, endLocalDateTime);
+        List<String> logUrls = dateTimeHours.stream().map(dateTimeHour -> urlPattern.replace(replaced, dateTimeHour))
+                .collect(Collectors.toList());
         String goal = config.getValue("goal");
         if (goal.equals("fetch")) {
             String accessKey = config.getValue("ak");
@@ -44,7 +45,19 @@ public class MainApp {
         } else if (goal.equals("download")) {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
-            logAnalyse.analyseLogs(csvReporter);
+            List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
+            String[] headers = new String[]{"时间点", "总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
+            csvReporter.setHeaders(headers);
+            for (Statistics statistic : statisticsList) {
+                List<String> values = new ArrayList<String>(){{
+                    add(String.valueOf(statistic.getPointTime().toString()));
+                    add(String.valueOf(statistic.getReqCount()));
+                    add(String.valueOf(statistic.getCartonRate()));
+                    add(String.valueOf(statistic.getValidLoadDurationAvg()));
+                    add(String.valueOf(statistic.getErrorRate()));
+                }};
+                csvReporter.insertData(values);
+            }
             try {
                 csvReporter.close();
             } catch (IOException e) {
