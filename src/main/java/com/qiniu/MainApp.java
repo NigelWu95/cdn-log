@@ -14,7 +14,6 @@ import com.qiniu.util.StatisticsUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,7 +48,8 @@ public class MainApp {
         } else if (goal.equals("analyse")) {
             List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
             csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
-            StatisticsUtils.exportDataTo(statisticsList, csvReporter);
+            StatisticsUtils.exportAllTo(statisticsList, csvReporter);
+            StatisticsUtils.exportWeightedDayAvgTo(statisticsList, csvReporter);
         } else {
             LogFileUtils.listLogs(logUrls, goal);
         }
