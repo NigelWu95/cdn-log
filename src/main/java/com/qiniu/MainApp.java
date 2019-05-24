@@ -9,10 +9,10 @@ import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
 import com.qiniu.util.Auth;
 import com.qiniu.util.DatetimeUtils;
+import com.qiniu.util.StatisticsUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +27,6 @@ public class MainApp {
         LocalDateTime endLocalDateTime = DatetimeUtils.parse(endTime);
         String urlPattern = config.getValue("url-pattern");
         String replaced = config.getValue("replaced");
-        CsvReporter csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
         List<String> dateTimeHours = DatetimeUtils.getDateTimeHours(startLocalDateTime, endLocalDateTime);
         List<String> logUrls = dateTimeHours.stream().map(dateTimeHour -> urlPattern.replace(replaced, dateTimeHour))
                 .collect(Collectors.toList());
@@ -46,23 +45,8 @@ public class MainApp {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
             List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-            String[] headers = new String[]{"时间点", "总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
-            csvReporter.setHeaders(headers);
-            for (Statistics statistic : statisticsList) {
-                List<String> values = new ArrayList<String>(){{
-                    add(String.valueOf(statistic.getPointTime().toString()));
-                    add(String.valueOf(statistic.getReqCount()));
-                    add(String.valueOf(statistic.getCartonRate()));
-                    add(String.valueOf(statistic.getValidLoadDurationAvg()));
-                    add(String.valueOf(statistic.getErrorRate()));
-                }};
-                csvReporter.insertData(values);
-            }
-            try {
-                csvReporter.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            CsvReporter csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
+            StatisticsUtils.exportDataTo(statisticsList, csvReporter);
         } else {
             LogFileUtils.listLogs(logUrls, goal);
         }
