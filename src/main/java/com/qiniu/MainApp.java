@@ -2,6 +2,7 @@ package com.qiniu;
 
 import com.qiniu.common.Config;
 import com.qiniu.miaopai.LogAnalyse;
+import com.qiniu.statements.CsvReporter;
 import com.qiniu.util.LogFileUtils;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.Configuration;
@@ -9,6 +10,7 @@ import com.qiniu.util.Auth;
 import com.qiniu.util.DatetimeUtils;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,7 +19,14 @@ public class MainApp {
     public static void main(String[] args) throws IOException {
 
         Config config = Config.getInstance();
-        LogAnalyse logAnalyse = new LogAnalyse(config);
+        String startTime = config.getValue("start-time");
+        String endTime = config.getValue("end-time");
+        LocalDateTime startLocalDateTime = DatetimeUtils.parse(startTime);
+        LocalDateTime endLocalDateTime = DatetimeUtils.parse(endTime);
+        String urlPattern = config.getValue("url-pattern");
+        String replaced = config.getValue("replaced");
+        CsvReporter csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
+        LogAnalyse logAnalyse = new LogAnalyse(startLocalDateTime, endLocalDateTime, urlPattern, replaced);
         List<String> dateTimeHours = DatetimeUtils.getDateTimeHours(logAnalyse.getStartLocalDateTime(),
                 logAnalyse.getEndLocalDateTime());
         List<String> logUrls = dateTimeHours.stream().map(logAnalyse::getRealUrl).collect(Collectors.toList());
@@ -35,7 +44,12 @@ public class MainApp {
         } else if (goal.equals("download")) {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
-            logAnalyse.analyseLogs();
+            logAnalyse.analyseLogs(csvReporter);
+            try {
+                csvReporter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
             LogFileUtils.listLogs(logUrls, goal);
         }

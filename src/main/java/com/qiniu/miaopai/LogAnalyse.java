@@ -1,7 +1,6 @@
 package com.qiniu.miaopai;
 
-import com.qiniu.common.Config;
-import com.qiniu.statements.CsvReporter;
+import com.qiniu.statements.DataReporter;
 import com.qiniu.util.DatetimeUtils;
 import com.qiniu.util.LogFileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -14,20 +13,16 @@ import java.util.stream.Collectors;
 
 public class LogAnalyse {
 
-    private String startTime;
-    private String endTime;
     private LocalDateTime startLocalDateTime;
     private LocalDateTime endLocalDateTime;
     private String urlPattern;
     private String replaced;
 
-    public LogAnalyse(Config config) throws IOException {
-        this.startTime = config.getValue("start-time");
-        this.endTime = config.getValue("end-time");
-        this.startLocalDateTime = DatetimeUtils.parse(startTime);
-        this.endLocalDateTime = DatetimeUtils.parse(endTime);
-        this.urlPattern = config.getValue("url-pattern");
-        this.replaced = config.getValue("replaced");
+    public LogAnalyse(LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime, String urlPattern, String replaced) {
+        this.startLocalDateTime = startLocalDateTime;
+        this.endLocalDateTime = endLocalDateTime;
+        this.urlPattern = urlPattern;
+        this.replaced = replaced;
     }
 
     public LocalDateTime getStartLocalDateTime() {
@@ -91,13 +86,13 @@ public class LogAnalyse {
         return statistics;
     }
 
-    public void analyseLogs() throws IOException {
+    public void analyseLogs(DataReporter dataReporter) throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
         List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
         String[] headers = new String[]{"时间点", "总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
-        CsvReporter csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv", headers);
+        dataReporter.setHeaders(headers);
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             LocalDateTime nextDateTime = localDateTime.plusHours(1);
             url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
@@ -124,16 +119,11 @@ public class LogAnalyse {
                     add(String.valueOf(statistic.getValidLoadDurationAvg()));
                     add(String.valueOf(statistic.getErrorRate()));
                 }};
-                csvReporter.insertData(values);
+                dataReporter.insertData(values);
             }
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;
             localDateTime = nextDateTime;
-        }
-        try {
-            csvReporter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }
