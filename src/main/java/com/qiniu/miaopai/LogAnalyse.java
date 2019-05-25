@@ -123,7 +123,6 @@ public class LogAnalyse {
             statisticsList.addAll(LogAnalyse.getStatistics(logs).stream()
                     .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
-                    .sorted(Comparator.comparing(Statistics::getPointTime))
                     .collect(Collectors.toList()));
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;
@@ -155,7 +154,6 @@ public class LogAnalyse {
             statisticsList.addAll(LogAnalyse.getStatisticsWithProvince(logs).stream()
                     .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
-                    .sorted(Comparator.comparing(Statistics::getPointTime))
                     .collect(Collectors.toList()));
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;

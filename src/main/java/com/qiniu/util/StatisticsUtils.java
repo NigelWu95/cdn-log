@@ -11,15 +11,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class StatisticsUtils {
 
     public static void exportAllTo(List<Statistics> statisticsList, DataReporter dataReporter) throws IOException {
+        statisticsList.sort(Comparator.comparing(Statistics::getPointTime));
         String[] headers = new String[]{"时间点", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         dataReporter.setHeaders(headers);
         for (Statistics statistic : statisticsList) {
@@ -35,33 +33,32 @@ public class StatisticsUtils {
         }
     }
 
-    /**
-     * // TODO
-     */
     public static void exportWeightedDayAvgTo(List<Statistics> statisticsList, DataReporter dataReporter) throws IOException {
+        statisticsList.sort(Comparator.comparing(Statistics::getPointTime));
         long dayRepCount = 0;
         long dayValidRepCount = 0;
         long weightedLoadDurationSum = 0;
         long weightedCartonRateSum = 0;
         long weightedErrorRateSum = 0;
-        LocalDateTime pointDatetime, dayDateTime, nextDay = null;
+        LocalDateTime pointDatetime, nearNextDay = null;
         String[] headers = new String[]{"时间", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         dataReporter.setHeaders(headers);
         for (Statistics statistic : statisticsList) {
             pointDatetime = statistic.getPointTime();
-            if (nextDay != null && pointDatetime.isBefore(nextDay)) {
+            if (nearNextDay == null) {
+                nearNextDay = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
+                        pointDatetime.getDayOfMonth(), 0, 0).plusDays(1);
+            }
+            if (pointDatetime.isBefore(nearNextDay)) {
                 dayRepCount += statistic.getReqCount();
                 dayValidRepCount += statistic.getValidReqCount();
-                weightedLoadDurationSum += statistic.getLoadDurationAvg() * statistic.getValidReqCount();
-                weightedCartonRateSum += statistic.getCartonRate() * statistic.getReqCount();
-                weightedErrorRateSum += statistic.getErrorRate() * statistic.getReqCount();
+                weightedLoadDurationSum += statistic.getValidReqCount() * statistic.getLoadDurationAvg();
+                weightedCartonRateSum += statistic.getReqCount() * statistic.getCartonRate();
+                weightedErrorRateSum += statistic.getReqCount() * statistic.getErrorRate();
             } else {
-                dayDateTime = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
-                        pointDatetime.getDayOfMonth(), 0, 0);
-                nextDay = dayDateTime.plusDays(1);
-                String dayDateTimeString = dayDateTime.toLocalDate().toString();
-//                long finalDayRepCount = dayRepCount;
-//                long finalDayValidRepCount = dayValidRepCount;
+                nearNextDay = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
+                        pointDatetime.getDayOfMonth(), 0, 0).plusDays(1).minusNanos(1);
+                String dayDateTimeString = nearNextDay.minusDays(1).toLocalDate().toString();
                 float loadDurationAvg = (float) weightedLoadDurationSum / dayValidRepCount;
                 float cartonRate = (float) weightedCartonRateSum / dayRepCount;
                 float errorRate = (float) weightedErrorRateSum / dayRepCount;
@@ -69,17 +66,24 @@ public class StatisticsUtils {
                     add(dayDateTimeString);
 //                    add(String.valueOf(finalDayRepCount));
 //                    add(String.valueOf(finalDayValidRepCount));
+                    add("0");
+                    add("0");
                     add(String.valueOf(cartonRate));
                     add(String.valueOf(loadDurationAvg));
                     add(String.valueOf(errorRate));
                 }};
                 dataReporter.insertData(values);
+                dayRepCount = statistic.getReqCount();
+                dayValidRepCount = statistic.getValidReqCount();
+                weightedLoadDurationSum = (long) (statistic.getValidReqCount() * statistic.getLoadDurationAvg());
+                weightedCartonRateSum = (long) (statistic.getReqCount() * statistic.getCartonRate());
+                weightedErrorRateSum = (long) (statistic.getReqCount() * statistic.getErrorRate());
             }
         }
     }
 
-    public static void exportAllWithProvinceTo(List<Statistics> statisticsList, String startTime, String endTime)
-            throws IOException {
+    public static void exportAllWithProvinceTo(List<Statistics> statisticsList, String startTime, String endTime) throws IOException {
+        statisticsList.sort(Comparator.comparing(Statistics::getPointTime));
         List<LocalDateTime> localDateTimes = statisticsList.parallelStream().map(Statistics::getPointTime)
                 .distinct().sorted().collect(Collectors.toList());
         List<String> provinces = statisticsList.parallelStream().map(Statistics::getProvince)

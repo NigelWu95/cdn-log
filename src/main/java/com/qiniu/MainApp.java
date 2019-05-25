@@ -55,7 +55,7 @@ public class MainApp {
             List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
             csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
             StatisticsUtils.exportAllTo(statisticsList, csvReporter);
-//            StatisticsUtils.exportWeightedDayAvgTo(statisticsList, csvReporter);
+            StatisticsUtils.exportWeightedDayAvgTo(statisticsList, csvReporter);
 
 //            List<Statistics> statisticsList = LogAnalyse.getAllStatisticsWithProvince(
 //                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
