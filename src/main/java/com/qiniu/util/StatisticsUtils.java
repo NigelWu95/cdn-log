@@ -59,16 +59,16 @@ public class StatisticsUtils {
                 dayDateTime = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
                         pointDatetime.getDayOfMonth(), 0, 0);
                 nextDay = dayDateTime.plusDays(1);
-                String dayDateTimeString = dayDateTime.toString();
-                long finalDayRepCount = dayRepCount;
+                String dayDateTimeString = dayDateTime.toLocalDate().toString();
+//                long finalDayRepCount = dayRepCount;
+//                long finalDayValidRepCount = dayValidRepCount;
                 float loadDurationAvg = (float) weightedLoadDurationSum / dayValidRepCount;
                 float cartonRate = (float) weightedCartonRateSum / dayRepCount;
                 float errorRate = (float) weightedErrorRateSum / dayRepCount;
-                long finalDayValidRepCount = dayValidRepCount;
                 List<String> values = new ArrayList<String>(){{
                     add(dayDateTimeString);
-                    add(String.valueOf(finalDayRepCount));
-                    add(String.valueOf(finalDayValidRepCount));
+//                    add(String.valueOf(finalDayRepCount));
+//                    add(String.valueOf(finalDayValidRepCount));
                     add(String.valueOf(cartonRate));
                     add(String.valueOf(loadDurationAvg));
                     add(String.valueOf(errorRate));
