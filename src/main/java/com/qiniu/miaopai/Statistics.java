@@ -9,7 +9,6 @@ public class Statistics {
     private String province;
     private LocalDateTime pointTime;
     private long reqCount;
-    private long loadDurationSum;
     private long validReqCount;
     private float loadDurationAvg; // 首帧加载时长 (ms)
     private long UV;
@@ -22,7 +21,6 @@ public class Statistics {
                       long UV, long kdUV, long errorCount) {
         this.pointTime = pointTime;
         this.reqCount = reqCount;
-        this.loadDurationSum = loadDurationSum;
         this.validReqCount = validReqCount;
         this.loadDurationAvg = (float) loadDurationSum / validReqCount;
         this.UV = UV;
@@ -47,10 +45,6 @@ public class Statistics {
 
     public long getReqCount() {
         return reqCount;
-    }
-
-    public long getLoadDurationSum() {
-        return loadDurationSum;
     }
 
     public long getValidReqCount() {

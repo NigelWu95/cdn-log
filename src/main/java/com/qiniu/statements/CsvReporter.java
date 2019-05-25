@@ -28,9 +28,9 @@ public class CsvReporter implements DataReporter {
     }
 
     @Override
-    public void newFile(String csvFilePath, String[] headers) throws IOException {
-        this.csvFilePath = csvFilePath;
-        this.fileOutputStream = new FileOutputStream(csvFilePath);
+    public void newFile(String filePath, String[] headers) throws IOException {
+        this.csvFilePath = filePath;
+        this.fileOutputStream = new FileOutputStream(filePath);
         this.osw = new OutputStreamWriter(fileOutputStream);
         this.headers = headers;
         this.csvFormat = CSVFormat.DEFAULT.withHeader(headers);

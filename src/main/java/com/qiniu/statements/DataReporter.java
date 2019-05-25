@@ -6,7 +6,7 @@ public interface DataReporter {
 
     void setHeaders(String[] headers);
 
-    void newFile(String csvFilePath, String[] headers) throws IOException;
+    void newFile(String filePath, String[] headers) throws IOException;
 
     String getReportFile();
 

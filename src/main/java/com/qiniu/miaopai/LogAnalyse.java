@@ -132,7 +132,7 @@ public class LogAnalyse {
         return statisticsList;
     }
 
-    public static List<Statistics> getStatisticsWithProvince(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
+    public static List<Statistics> getAllStatisticsWithProvince(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
                                                     LocalDateTime endLocalDateTime) throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
