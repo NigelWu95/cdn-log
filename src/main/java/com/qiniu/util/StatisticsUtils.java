@@ -43,7 +43,10 @@ public class StatisticsUtils {
         LocalDateTime pointDatetime, nearNextDay = null;
         String[] headers = new String[]{"时间", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         dataReporter.setHeaders(headers);
-        for (Statistics statistic : statisticsList) {
+        Statistics statistic;
+        int size = statisticsList.size();
+        for (int i = 0; i < size; i++) {
+            statistic = statisticsList.get(i);
             pointDatetime = statistic.getPointTime();
             if (nearNextDay == null) {
                 nearNextDay = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
@@ -55,7 +58,8 @@ public class StatisticsUtils {
                 weightedLoadDurationSum += statistic.getValidReqCount() * statistic.getLoadDurationAvg();
                 weightedCartonRateSum += statistic.getReqCount() * statistic.getCartonRate();
                 weightedErrorRateSum += statistic.getReqCount() * statistic.getErrorRate();
-            } else {
+            }
+            if (pointDatetime.isAfter(nearNextDay) || i == size - 1) {
                 nearNextDay = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
                         pointDatetime.getDayOfMonth(), 0, 0).plusDays(1).minusNanos(1);
                 String dayDateTimeString = nearNextDay.minusDays(1).toLocalDate().toString();
