@@ -84,7 +84,7 @@ public class LogAnalyse {
                     if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) errorLogs.add(mpLog);
                     return mpLog.getVideoViewLoadDuration();
                 }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
-                long reqCount = groupedLogs.size();
+                long reqCount = provinceGroupedLogs.size();
                 long UV = logSet.size();
                 long kdUV = kdLogSet.size();
                 long validReqCount = validDurations.size();
