@@ -168,7 +168,9 @@ public class LogAnalyse {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
-        List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
+        List<MPLog> logs = LogFileUtils.readLogsFrom(fileName).stream()
+                .filter(mpLog -> !provinces.contains(mpLog.getProvince()))
+                .collect(Collectors.toList());
         List<Statistic> statistics = new ArrayList<>();
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             LocalDateTime nextDateTime = localDateTime.plusHours(1);
@@ -176,17 +178,18 @@ public class LogAnalyse {
             fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
             List<MPLog> nextPhraseLogs;
             try {
-                nextPhraseLogs = LogFileUtils.readLogsFrom(fileName);
+                nextPhraseLogs = LogFileUtils.readLogsFrom(fileName).stream()
+                        .filter(mpLog -> !provinces.contains(mpLog.getProvince()))
+                        .collect(Collectors.toList());
             } catch (IOException e) {
                 e.printStackTrace();
                 nextPhraseLogs = new ArrayList<>();
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            statistics.addAll(LogAnalyse.statisticsWithProvince(logs).stream()
+            statistics.addAll(LogAnalyse.statistics(logs).stream()
                     .filter(statistic -> statistic.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistic.getPointTime().compareTo(finalLocalDateTime) > 0)
-                    .filter(statistic -> !provinces.contains(statistic.getProvince()))
                     .collect(Collectors.toList()));
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;
