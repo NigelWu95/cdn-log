@@ -45,6 +45,7 @@ public class StatisticsUtils {
         dataReporter.setHeaders(headers);
         Statistics statistic;
         int size = statisticsList.size();
+        boolean end = false;
         for (int i = 0; i < size; i++) {
             statistic = statisticsList.get(i);
             pointDatetime = statistic.getPointTime();
@@ -58,16 +59,18 @@ public class StatisticsUtils {
                 weightedLoadDurationSum += statistic.getValidReqCount() * statistic.getLoadDurationAvg();
                 weightedCartonRateSum += statistic.getReqCount() * statistic.getCartonRate();
                 weightedErrorRateSum += statistic.getReqCount() * statistic.getErrorRate();
+            } else {
+                end = true;
             }
-            if (pointDatetime.isAfter(nearNextDay) || i == size - 1) {
+            if (end || i == size - 1) {
                 nearNextDay = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
                         pointDatetime.getDayOfMonth(), 0, 0).plusDays(1).minusNanos(1);
-                String dayDateTimeString = nearNextDay.minusDays(1).toLocalDate().toString();
+                String dayDateTimeString = (end ? nearNextDay.minusDays(1) : pointDatetime).toLocalDate().toString();
                 float loadDurationAvg = (float) weightedLoadDurationSum / dayValidRepCount;
                 float cartonRate = (float) weightedCartonRateSum / dayRepCount;
                 float errorRate = (float) weightedErrorRateSum / dayRepCount;
                 List<String> values = new ArrayList<String>(){{
-                    add(dayDateTimeString);
+                    add(dayDateTimeString + "-WeightedDayAvg");
 //                    add(String.valueOf(finalDayRepCount));
 //                    add(String.valueOf(finalDayValidRepCount));
                     add("0");
@@ -82,6 +85,7 @@ public class StatisticsUtils {
                 weightedLoadDurationSum = (long) (statistic.getValidReqCount() * statistic.getLoadDurationAvg());
                 weightedCartonRateSum = (long) (statistic.getReqCount() * statistic.getCartonRate());
                 weightedErrorRateSum = (long) (statistic.getReqCount() * statistic.getErrorRate());
+                end = false;
             }
         }
     }
