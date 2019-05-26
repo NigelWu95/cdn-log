@@ -100,6 +100,46 @@ public class LogAnalyse {
         return statistics;
     }
 
+    public static List<Statistics> getStatisticsExcludeProvince(List<MPLog> logs, Set<String> provinces) {
+        List<Statistics> statistics = new ArrayList<>();
+        Set<MPLog> logSet = new HashSet<>();
+        Set<MPLog> kdLogSet = new HashSet<>();
+        List<MPLog> errorLogs = new ArrayList<>();
+        Map<LocalDateTime, List<MPLog>> groupedMap = logs.parallelStream()
+                .collect(Collectors.groupingBy(mpLog -> DatetimeUtils.groupedTimeBy5Min(mpLog.getTime())));
+        List<MPLog> groupedLogs;
+        List<MPLog> provinceGroupedLogs;
+        for (LocalDateTime localDateTime : groupedMap.keySet()) {
+            groupedLogs = groupedMap.get(localDateTime);
+            Map<String, List<MPLog>> provinceGroupedMap = groupedLogs.parallelStream()
+                    .collect(Collectors.groupingBy(MPLog::getProvince));
+            for (String province : provinces) provinceGroupedMap.remove(province);
+            for (String province : provinceGroupedMap.keySet()) {
+                provinceGroupedLogs = provinceGroupedMap.get(province);
+                List<Long> validDurations = provinceGroupedLogs.parallelStream().map(mpLog -> {
+                    logSet.add(mpLog);
+                    if (mpLog.getBufTimes() > 0) kdLogSet.add(mpLog);
+                    int code = mpLog.getError();
+                    long duration = mpLog.getVideoViewLoadDuration();
+                    if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) errorLogs.add(mpLog);
+                    return mpLog.getVideoViewLoadDuration();
+                }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
+                long reqCount = provinceGroupedLogs.size();
+                long UV = logSet.size();
+                long kdUV = kdLogSet.size();
+                long validReqCount = validDurations.size();
+                long loadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
+                long errorCount = errorLogs.size();
+                statistics.add(new Statistics(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount)
+                        .withProvince(province));
+                logSet.clear();
+                kdLogSet.clear();
+                errorLogs.clear();
+            }
+        }
+        return statistics;
+    }
+
     public static List<Statistics> getAllStatistics(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
                                                     LocalDateTime endLocalDateTime) throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
@@ -132,7 +172,7 @@ public class LogAnalyse {
     }
 
     public static List<Statistics> getAllStatisticsWithProvince(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
-                                                    LocalDateTime endLocalDateTime) throws IOException {
+                                                                LocalDateTime endLocalDateTime) throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
@@ -152,6 +192,38 @@ public class LogAnalyse {
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
             statisticsList.addAll(LogAnalyse.getStatisticsWithProvince(logs).stream()
+                    .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
+                            statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
+                    .collect(Collectors.toList()));
+            System.out.println(fileName + " finished");
+            logs = nextPhraseLogs;
+            localDateTime = nextDateTime;
+        }
+        return statisticsList;
+    }
+
+    public static List<Statistics> getAllStatisticsExcludeProvinces(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
+                                                                LocalDateTime endLocalDateTime, Set<String> provinces)
+            throws IOException {
+        LocalDateTime localDateTime = startLocalDateTime;
+        String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
+        String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
+        List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
+        List<Statistics> statisticsList = new ArrayList<>();
+        while (localDateTime.compareTo(endLocalDateTime) <= 0) {
+            LocalDateTime nextDateTime = localDateTime.plusHours(1);
+            url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
+            fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
+            List<MPLog> nextPhraseLogs;
+            try {
+                nextPhraseLogs = LogFileUtils.readLogsFrom(fileName);
+            } catch (IOException e) {
+                e.printStackTrace();
+                nextPhraseLogs = new ArrayList<>();
+            }
+            logs.addAll(nextPhraseLogs);
+            LocalDateTime finalLocalDateTime = localDateTime;
+            statisticsList.addAll(LogAnalyse.getStatisticsExcludeProvince(logs, provinces).stream()
                     .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
                     .collect(Collectors.toList()));

@@ -52,14 +52,31 @@ public class MainApp {
         } else if (goal.equals("download")) {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
-            List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-            csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
-            StatisticsUtils.exportAllTo(statisticsList, csvReporter);
-            StatisticsUtils.exportWeightedDayAvgTo(statisticsList, csvReporter);
+//            List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
+//            csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
+//            StatisticsUtils.exportAllTo(statisticsList, csvReporter);
+//            StatisticsUtils.exportWeightedDayAvgTo(statisticsList, csvReporter);
 
 //            List<Statistics> statisticsList = LogAnalyse.getAllStatisticsWithProvince(
 //                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
 //            StatisticsUtils.exportAllWithProvinceTo(statisticsList, startTime, endTime);
+
+            Set<String> excludeProvinces = new HashSet<String>(){{
+                add("西藏");
+                add("贵州");
+                add("四川");
+                add("甘肃");
+                add("北京");
+//                add("广东");
+//                add("云南");
+//                add("广西");
+//                add("浙江");
+//                add("福建");
+//                add("河南");
+            }};
+            List<Statistics> statisticsList = LogAnalyse.getAllStatisticsExcludeProvinces(
+                    urlPattern, replaced, startLocalDateTime, endLocalDateTime, excludeProvinces);
+            StatisticsUtils.exportAllWithProvinceTo(statisticsList, startTime, endTime);
         } else {
             LogFileUtils.listLogs(logUrls, goal);
         }
