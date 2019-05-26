@@ -1,6 +1,6 @@
 package com.qiniu.util;
 
-import com.qiniu.miaopai.Statistics;
+import com.qiniu.miaopai.Statistic;
 import com.qiniu.statements.DataReporter;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 
 public class StatisticsUtils {
 
-    public static void exportAllTo(List<Statistics> statisticsList, DataReporter dataReporter) throws IOException {
-        statisticsList.sort(Comparator.comparing(Statistics::getPointTime));
+    public static void exportTo(List<Statistic> statistics, DataReporter dataReporter) throws IOException {
+        statistics.sort(Comparator.comparing(Statistic::getPointTime));
         String[] headers = new String[]{"时间点", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         dataReporter.setHeaders(headers);
-        for (Statistics statistic : statisticsList) {
+        for (Statistic statistic : statistics) {
             List<String> values = new ArrayList<String>(){{
                 add(String.valueOf(statistic.getPointTime().toString()));
                 add(String.valueOf(statistic.getReqCount()));
@@ -33,8 +33,8 @@ public class StatisticsUtils {
         }
     }
 
-    public static void exportWeightedDayAvgTo(List<Statistics> statisticsList, DataReporter dataReporter) throws IOException {
-        statisticsList.sort(Comparator.comparing(Statistics::getPointTime));
+    public static void exportWeightedDayAvgTo(List<Statistic> statistics, DataReporter dataReporter) throws IOException {
+        statistics.sort(Comparator.comparing(Statistic::getPointTime));
         long dayRepCount = 0;
         long dayValidRepCount = 0;
         long weightedLoadDurationSum = 0;
@@ -43,11 +43,11 @@ public class StatisticsUtils {
         LocalDateTime pointDatetime, nearNextDay = null;
         String[] headers = new String[]{"时间", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         dataReporter.setHeaders(headers);
-        Statistics statistic;
-        int size = statisticsList.size();
+        Statistic statistic;
+        int size = statistics.size();
         boolean end = false;
         for (int i = 0; i < size; i++) {
-            statistic = statisticsList.get(i);
+            statistic = statistics.get(i);
             pointDatetime = statistic.getPointTime();
             if (nearNextDay == null) {
                 nearNextDay = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
@@ -90,11 +90,11 @@ public class StatisticsUtils {
         }
     }
 
-    public static void exportAllWithProvinceTo(List<Statistics> statisticsList, String startTime, String endTime) throws IOException {
-        statisticsList.sort(Comparator.comparing(Statistics::getPointTime));
-        List<LocalDateTime> localDateTimes = statisticsList.parallelStream().map(Statistics::getPointTime)
+    public static void exportWithProvinceTo(List<Statistic> statistics, String startTime, String endTime) throws IOException {
+        statistics.sort(Comparator.comparing(Statistic::getPointTime));
+        List<LocalDateTime> localDateTimes = statistics.parallelStream().map(Statistic::getPointTime)
                 .distinct().sorted().collect(Collectors.toList());
-        List<String> provinces = statisticsList.parallelStream().map(Statistics::getProvince)
+        List<String> provinces = statistics.parallelStream().map(Statistic::getProvince)
                 .distinct().collect(Collectors.toList());
         XSSFWorkbook workbook = new XSSFWorkbook();
         String[] sheets = new String[]{"总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
@@ -121,15 +121,15 @@ public class StatisticsUtils {
                 }
                 if (i >= 0) timeXSSFRowMap.put(localDateTimes.get(i), cellMap);
             }
-            for (Statistics statistics : statisticsList) {
-                XSSFCell xssfCell = timeXSSFRowMap.get(statistics.getPointTime()).get(statistics.getProvince());
+            for (Statistic statistic : statistics) {
+                XSSFCell xssfCell = timeXSSFRowMap.get(statistic.getPointTime()).get(statistic.getProvince());
                 switch (k) {
-//                        case 0: xssfCell.setCellValue(statistics.getPointTime().toString());
-                    case 0: xssfCell.setCellValue(statistics.getReqCount()); break;
-                    case 1: xssfCell.setCellValue(statistics.getValidReqCount()); break;
-                    case 2: xssfCell.setCellValue(statistics.getCartonRate()); break;
-                    case 3: xssfCell.setCellValue(statistics.getLoadDurationAvg()); break;
-                    case 4: xssfCell.setCellValue(statistics.getErrorRate()); break;
+//                        case 0: xssfCell.setCellValue(statistic.getPointTime().toString());
+                    case 0: xssfCell.setCellValue(statistic.getReqCount()); break;
+                    case 1: xssfCell.setCellValue(statistic.getValidReqCount()); break;
+                    case 2: xssfCell.setCellValue(statistic.getCartonRate()); break;
+                    case 3: xssfCell.setCellValue(statistic.getLoadDurationAvg()); break;
+                    case 4: xssfCell.setCellValue(statistic.getErrorRate()); break;
                 }
             }
         }

@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 
 import java.time.LocalDateTime;
 
-public class Statistics {
+public class Statistic {
 
     private String province;
     private LocalDateTime pointTime;
@@ -17,8 +17,8 @@ public class Statistics {
     private long errorCount;
     private float errorRate; // 错误率
 
-    public Statistics(LocalDateTime pointTime, long reqCount, long loadDurationSum, long validReqCount,
-                      long UV, long kdUV, long errorCount) {
+    public Statistic(LocalDateTime pointTime, long reqCount, long loadDurationSum, long validReqCount,
+                     long UV, long kdUV, long errorCount) {
         this.pointTime = pointTime;
         this.reqCount = reqCount;
         this.validReqCount = validReqCount;
@@ -34,7 +34,7 @@ public class Statistics {
         return province;
     }
 
-    public Statistics withProvince(String province) {
+    public Statistic withProvince(String province) {
         this.province = province;
         return this;
     }

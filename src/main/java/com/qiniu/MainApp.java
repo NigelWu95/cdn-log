@@ -2,7 +2,7 @@ package com.qiniu;
 
 import com.qiniu.common.Config;
 import com.qiniu.miaopai.LogAnalyse;
-import com.qiniu.miaopai.Statistics;
+import com.qiniu.miaopai.Statistic;
 import com.qiniu.statements.CsvReporter;
 import com.qiniu.statements.DataReporter;
 import com.qiniu.util.LogFileUtils;
@@ -11,13 +11,7 @@ import com.qiniu.storage.Configuration;
 import com.qiniu.util.Auth;
 import com.qiniu.util.DatetimeUtils;
 import com.qiniu.util.StatisticsUtils;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -52,14 +46,14 @@ public class MainApp {
         } else if (goal.equals("download")) {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
-//            List<Statistics> statisticsList = LogAnalyse.getAllStatistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-//            csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
-//            StatisticsUtils.exportAllTo(statisticsList, csvReporter);
-//            StatisticsUtils.exportWeightedDayAvgTo(statisticsList, csvReporter);
+            csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
+//            List<Statistic> statistics = LogAnalyse.statistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
+//            StatisticsUtils.exportTo(statistics, csvReporter);
+//            StatisticsUtils.exportWeightedDayAvgTo(statistics, csvReporter);
 
-//            List<Statistics> statisticsList = LogAnalyse.getAllStatisticsWithProvince(
+//            List<Statistic> statistics = LogAnalyse.statisticsWithProvince(
 //                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-//            StatisticsUtils.exportAllWithProvinceTo(statisticsList, startTime, endTime);
+//            StatisticsUtils.exportWithProvinceTo(statistics, startTime, endTime);
 
             Set<String> excludeProvinces = new HashSet<String>(){{
                 add("西藏");
@@ -74,9 +68,9 @@ public class MainApp {
 //                add("福建");
 //                add("河南");
             }};
-            List<Statistics> statisticsList = LogAnalyse.getAllStatisticsExcludeProvinces(
+            List<Statistic> statistics = LogAnalyse.statisticsExcludeProvinces(
                     urlPattern, replaced, startLocalDateTime, endLocalDateTime, excludeProvinces);
-            StatisticsUtils.exportAllWithProvinceTo(statisticsList, startTime, endTime);
+            StatisticsUtils.exportTo(statistics, csvReporter);
         } else {
             LogFileUtils.listLogs(logUrls, goal);
         }

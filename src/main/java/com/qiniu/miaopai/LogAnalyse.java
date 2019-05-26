@@ -12,20 +12,20 @@ import java.util.stream.Collectors;
 
 public class LogAnalyse {
 
-    public static List<Statistics> getStatistics(String file) throws IOException {
-        return getStatistics(LogFileUtils.readLogsFrom(file));
+    public static List<Statistic> statistics(String file) throws IOException {
+        return statistics(LogFileUtils.readLogsFrom(file));
     }
 
-    public static List<Statistics> getStatistics(URL url) throws IOException {
-        return getStatistics(LogFileUtils.readLogsFrom(url));
+    public static List<Statistic> statistics(URL url) throws IOException {
+        return statistics(LogFileUtils.readLogsFrom(url));
     }
 
-    public static List<Statistics> getStatistics(InputStream inputStream) throws IOException {
-        return getStatistics(LogFileUtils.readLogsFrom(inputStream));
+    public static List<Statistic> statistics(InputStream inputStream) throws IOException {
+        return statistics(LogFileUtils.readLogsFrom(inputStream));
     }
 
-    public static List<Statistics> getStatistics(List<MPLog> logs) {
-        List<Statistics> statistics = new ArrayList<>();
+    public static List<Statistic> statistics(List<MPLog> logs) {
+        List<Statistic> statistics = new ArrayList<>();
         Set<MPLog> logSet = new HashSet<>();
         Set<MPLog> kdLogSet = new HashSet<>();
         List<MPLog> errorLogs = new ArrayList<>();
@@ -53,7 +53,7 @@ public class LogAnalyse {
             long loadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
 //                logs.parallelStream().collect(Collectors.summarizingLong(MPLog::getVideoViewLoadDuration)).getSum();
             long errorCount = errorLogs.size();
-            statistics.add(new Statistics(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount));
+            statistics.add(new Statistic(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount));
             logSet.clear();
             kdLogSet.clear();
             errorLogs.clear();
@@ -61,8 +61,8 @@ public class LogAnalyse {
         return statistics;
     }
 
-    public static List<Statistics> getStatisticsWithProvince(List<MPLog> logs) {
-        List<Statistics> statistics = new ArrayList<>();
+    public static List<Statistic> statisticsWithProvince(List<MPLog> logs) {
+        List<Statistic> statistics = new ArrayList<>();
         Set<MPLog> logSet = new HashSet<>();
         Set<MPLog> kdLogSet = new HashSet<>();
         List<MPLog> errorLogs = new ArrayList<>();
@@ -90,7 +90,7 @@ public class LogAnalyse {
                 long validReqCount = validDurations.size();
                 long loadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
                 long errorCount = errorLogs.size();
-                statistics.add(new Statistics(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount)
+                statistics.add(new Statistic(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount)
                         .withProvince(province));
                 logSet.clear();
                 kdLogSet.clear();
@@ -100,53 +100,13 @@ public class LogAnalyse {
         return statistics;
     }
 
-    public static List<Statistics> getStatisticsExcludeProvince(List<MPLog> logs, Set<String> provinces) {
-        List<Statistics> statistics = new ArrayList<>();
-        Set<MPLog> logSet = new HashSet<>();
-        Set<MPLog> kdLogSet = new HashSet<>();
-        List<MPLog> errorLogs = new ArrayList<>();
-        Map<LocalDateTime, List<MPLog>> groupedMap = logs.parallelStream()
-                .collect(Collectors.groupingBy(mpLog -> DatetimeUtils.groupedTimeBy5Min(mpLog.getTime())));
-        List<MPLog> groupedLogs;
-        List<MPLog> provinceGroupedLogs;
-        for (LocalDateTime localDateTime : groupedMap.keySet()) {
-            groupedLogs = groupedMap.get(localDateTime);
-            Map<String, List<MPLog>> provinceGroupedMap = groupedLogs.parallelStream()
-                    .collect(Collectors.groupingBy(MPLog::getProvince));
-            for (String province : provinces) provinceGroupedMap.remove(province);
-            for (String province : provinceGroupedMap.keySet()) {
-                provinceGroupedLogs = provinceGroupedMap.get(province);
-                List<Long> validDurations = provinceGroupedLogs.parallelStream().map(mpLog -> {
-                    logSet.add(mpLog);
-                    if (mpLog.getBufTimes() > 0) kdLogSet.add(mpLog);
-                    int code = mpLog.getError();
-                    long duration = mpLog.getVideoViewLoadDuration();
-                    if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) errorLogs.add(mpLog);
-                    return mpLog.getVideoViewLoadDuration();
-                }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
-                long reqCount = provinceGroupedLogs.size();
-                long UV = logSet.size();
-                long kdUV = kdLogSet.size();
-                long validReqCount = validDurations.size();
-                long loadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
-                long errorCount = errorLogs.size();
-                statistics.add(new Statistics(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount)
-                        .withProvince(province));
-                logSet.clear();
-                kdLogSet.clear();
-                errorLogs.clear();
-            }
-        }
-        return statistics;
-    }
-
-    public static List<Statistics> getAllStatistics(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
-                                                    LocalDateTime endLocalDateTime) throws IOException {
+    public static List<Statistic> statistics(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
+                                             LocalDateTime endLocalDateTime) throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
         List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
-        List<Statistics> statisticsList = new ArrayList<>();
+        List<Statistic> statistics = new ArrayList<>();
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             LocalDateTime nextDateTime = localDateTime.plusHours(1);
             url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
@@ -160,24 +120,24 @@ public class LogAnalyse {
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            statisticsList.addAll(LogAnalyse.getStatistics(logs).stream()
-                    .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
-                            statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
+            statistics.addAll(LogAnalyse.statistics(logs).stream()
+                    .filter(statistic -> statistic.getPointTime().compareTo(nextDateTime) <= 0 &&
+                            statistic.getPointTime().compareTo(finalLocalDateTime) > 0)
                     .collect(Collectors.toList()));
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;
             localDateTime = nextDateTime;
         }
-        return statisticsList;
+        return statistics;
     }
 
-    public static List<Statistics> getAllStatisticsWithProvince(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
-                                                                LocalDateTime endLocalDateTime) throws IOException {
+    public static List<Statistic> statisticsWithProvince(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
+                                                               LocalDateTime endLocalDateTime) throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
         List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
-        List<Statistics> statisticsList = new ArrayList<>();
+        List<Statistic> statistics = new ArrayList<>();
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             LocalDateTime nextDateTime = localDateTime.plusHours(1);
             url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
@@ -191,25 +151,25 @@ public class LogAnalyse {
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            statisticsList.addAll(LogAnalyse.getStatisticsWithProvince(logs).stream()
-                    .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
-                            statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
+            statistics.addAll(LogAnalyse.statisticsWithProvince(logs).stream()
+                    .filter(statistic -> statistic.getPointTime().compareTo(nextDateTime) <= 0 &&
+                            statistic.getPointTime().compareTo(finalLocalDateTime) > 0)
                     .collect(Collectors.toList()));
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;
             localDateTime = nextDateTime;
         }
-        return statisticsList;
+        return statistics;
     }
 
-    public static List<Statistics> getAllStatisticsExcludeProvinces(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
-                                                                LocalDateTime endLocalDateTime, Set<String> provinces)
+    public static List<Statistic> statisticsExcludeProvinces(String urlPattern, String replaced, LocalDateTime startLocalDateTime,
+                                                                   LocalDateTime endLocalDateTime, Set<String> provinces)
             throws IOException {
         LocalDateTime localDateTime = startLocalDateTime;
         String url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(localDateTime));
         String fileName = FilenameUtils.concat(LogFileUtils.logPath, url.substring(url.lastIndexOf("/") + 1));
         List<MPLog> logs = LogFileUtils.readLogsFrom(fileName);
-        List<Statistics> statisticsList = new ArrayList<>();
+        List<Statistic> statistics = new ArrayList<>();
         while (localDateTime.compareTo(endLocalDateTime) <= 0) {
             LocalDateTime nextDateTime = localDateTime.plusHours(1);
             url = urlPattern.replace(replaced, DatetimeUtils.getDateTimeHour(nextDateTime));
@@ -223,14 +183,15 @@ public class LogAnalyse {
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            statisticsList.addAll(LogAnalyse.getStatisticsExcludeProvince(logs, provinces).stream()
-                    .filter(statistics -> statistics.getPointTime().compareTo(nextDateTime) <= 0 &&
-                            statistics.getPointTime().compareTo(finalLocalDateTime) > 0)
+            statistics.addAll(LogAnalyse.statisticsWithProvince(logs).stream()
+                    .filter(statistic -> statistic.getPointTime().compareTo(nextDateTime) <= 0 &&
+                            statistic.getPointTime().compareTo(finalLocalDateTime) > 0)
+                    .filter(statistic -> !provinces.contains(statistic.getProvince()))
                     .collect(Collectors.toList()));
             System.out.println(fileName + " finished");
             logs = nextPhraseLogs;
             localDateTime = nextDateTime;
         }
-        return statisticsList;
+        return statistics;
     }
 }
