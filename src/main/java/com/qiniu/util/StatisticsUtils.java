@@ -18,13 +18,12 @@ public class StatisticsUtils {
 
     public static void exportTo(List<Statistic> statistics, DataReporter dataReporter) throws IOException {
         statistics.sort(Comparator.comparing(Statistic::getPointTime));
-        String[] headers = new String[]{"时间点", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
+        String[] headers = new String[]{"时间点", "总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         dataReporter.setHeaders(headers);
         for (Statistic statistic : statistics) {
             List<String> values = new ArrayList<String>(){{
                 add(String.valueOf(statistic.getPointTime().toString()));
                 add(String.valueOf(statistic.getReqCount()));
-                add(String.valueOf(statistic.getValidReqCount()));
                 add(String.valueOf(statistic.getCartonRate()));
                 add(String.valueOf(statistic.getLoadDurationAvg()));
                 add(String.valueOf(statistic.getErrorRate()));
@@ -33,15 +32,15 @@ public class StatisticsUtils {
         }
     }
 
-    public static void exportWeightedDayAvgTo(List<Statistic> statistics, DataReporter dataReporter) throws IOException {
+    public static void exportDayAvgTo(List<Statistic> statistics, DataReporter dataReporter) throws IOException {
         statistics.sort(Comparator.comparing(Statistic::getPointTime));
         long dayRepCount = 0;
-        long dayValidRepCount = 0;
-        long weightedLoadDurationSum = 0;
+        long dayLoadDurationCount = 0;
+        long dayLoadDurationSum = 0;
         long weightedCartonRateSum = 0;
-        long weightedErrorRateSum = 0;
+        long dayErrorCountSum = 0;
         LocalDateTime pointDatetime, nearNextDay = null;
-        String[] headers = new String[]{"时间", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
+        String[] headers = new String[]{"时间", "总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         dataReporter.setHeaders(headers);
         Statistic statistic;
         int size = statistics.size();
@@ -55,10 +54,10 @@ public class StatisticsUtils {
             }
             if (pointDatetime.isBefore(nearNextDay)) {
                 dayRepCount += statistic.getReqCount();
-                dayValidRepCount += statistic.getValidReqCount();
-                weightedLoadDurationSum += statistic.getValidReqCount() * statistic.getLoadDurationAvg();
+                dayLoadDurationCount += statistic.getLoadDurationCount();
+                dayLoadDurationSum += statistic.getLoadDurationSum();
                 weightedCartonRateSum += statistic.getReqCount() * statistic.getCartonRate();
-                weightedErrorRateSum += statistic.getReqCount() * statistic.getErrorRate();
+                dayErrorCountSum += statistic.getErrorCount();
             } else {
                 end = true;
             }
@@ -66,25 +65,22 @@ public class StatisticsUtils {
                 nearNextDay = LocalDateTime.of(pointDatetime.getYear(), pointDatetime.getMonth(),
                         pointDatetime.getDayOfMonth(), 0, 0).plusDays(1).minusNanos(1);
                 String dayDateTimeString = (end ? nearNextDay.minusDays(1) : pointDatetime).toLocalDate().toString();
-                float loadDurationAvg = (float) weightedLoadDurationSum / dayValidRepCount;
-                float cartonRate = (float) weightedCartonRateSum / dayRepCount;
-                float errorRate = (float) weightedErrorRateSum / dayRepCount;
+                float dayLoadDurationAvg = (float) dayLoadDurationSum / dayLoadDurationCount;
+                float dayCartonRate = (float) weightedCartonRateSum / dayRepCount;
+                float dayErrorRate = (float) dayErrorCountSum / dayRepCount;
                 List<String> values = new ArrayList<String>(){{
-                    add(dayDateTimeString + "-WeightedDayAvg");
-//                    add(String.valueOf(finalDayRepCount));
-//                    add(String.valueOf(finalDayValidRepCount));
+                    add(dayDateTimeString + "-dayAvg");
                     add("0");
-                    add("0");
-                    add(String.valueOf(cartonRate));
-                    add(String.valueOf(loadDurationAvg));
-                    add(String.valueOf(errorRate));
+                    add(String.valueOf(dayCartonRate));
+                    add(String.valueOf(dayLoadDurationAvg));
+                    add(String.valueOf(dayErrorRate));
                 }};
                 dataReporter.insertData(values);
                 dayRepCount = statistic.getReqCount();
-                dayValidRepCount = statistic.getValidReqCount();
-                weightedLoadDurationSum = (long) (statistic.getValidReqCount() * statistic.getLoadDurationAvg());
+                dayLoadDurationCount = statistic.getLoadDurationCount();
+                dayLoadDurationSum = statistic.getLoadDurationSum();
                 weightedCartonRateSum = (long) (statistic.getReqCount() * statistic.getCartonRate());
-                weightedErrorRateSum = (long) (statistic.getReqCount() * statistic.getErrorRate());
+                dayErrorCountSum = statistic.getErrorCount();
                 end = false;
             }
         }
@@ -97,7 +93,7 @@ public class StatisticsUtils {
         List<String> provinces = statistics.parallelStream().map(Statistic::getProvince)
                 .distinct().collect(Collectors.toList());
         XSSFWorkbook workbook = new XSSFWorkbook();
-        String[] sheets = new String[]{"总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
+        String[] sheets = new String[]{"总请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
 //            String[] sheets = new String[]{"时间点", "总请求数", "有效请求数", "卡顿率", "⾸帧加载时⻓长", "错误率"};
         FileOutputStream fileOutputStream = new FileOutputStream(
                 new File("statistics/province-" + startTime + "-" + endTime + ".xlsx"));
@@ -126,10 +122,9 @@ public class StatisticsUtils {
                 switch (k) {
 //                        case 0: xssfCell.setCellValue(statistic.getPointTime().toString());
                     case 0: xssfCell.setCellValue(statistic.getReqCount()); break;
-                    case 1: xssfCell.setCellValue(statistic.getValidReqCount()); break;
-                    case 2: xssfCell.setCellValue(statistic.getCartonRate()); break;
-                    case 3: xssfCell.setCellValue(statistic.getLoadDurationAvg()); break;
-                    case 4: xssfCell.setCellValue(statistic.getErrorRate()); break;
+                    case 1: xssfCell.setCellValue(statistic.getCartonRate()); break;
+                    case 2: xssfCell.setCellValue(statistic.getLoadDurationAvg()); break;
+                    case 3: xssfCell.setCellValue(statistic.getErrorRate()); break;
                 }
             }
         }

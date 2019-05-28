@@ -49,11 +49,11 @@ public class LogAnalyse {
 //                logs.parallelStream().distinct().count();
             long kdUV = kdLogSet.size();
 //                logs.parallelStream().filter(mpLog -> mpLog.getBufTimes() > 0).distinct().count();
-            long validReqCount = validDurations.size();
+            long loadDurationCount = validDurations.size();
             long loadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
 //                logs.parallelStream().collect(Collectors.summarizingLong(MPLog::getVideoViewLoadDuration)).getSum();
             long errorCount = errorLogs.size();
-            statistics.add(new Statistic(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount));
+            statistics.add(new Statistic(localDateTime, reqCount, loadDurationSum, loadDurationCount, UV, kdUV, errorCount));
             logSet.clear();
             kdLogSet.clear();
             errorLogs.clear();
@@ -85,12 +85,12 @@ public class LogAnalyse {
                     return mpLog.getVideoViewLoadDuration();
                 }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
                 long reqCount = provinceGroupedLogs.size();
+                long errorCount = errorLogs.size();
                 long UV = logSet.size();
                 long kdUV = kdLogSet.size();
-                long validReqCount = validDurations.size();
+                long loadDurationCount = validDurations.size();
                 long loadDurationSum = validDurations.parallelStream().reduce(Long::sum).orElse(0L);
-                long errorCount = errorLogs.size();
-                statistics.add(new Statistic(localDateTime, reqCount, loadDurationSum, validReqCount, UV, kdUV, errorCount)
+                statistics.add(new Statistic(localDateTime, reqCount, loadDurationSum, loadDurationCount, UV, kdUV, errorCount)
                         .withProvince(province));
                 logSet.clear();
                 kdLogSet.clear();

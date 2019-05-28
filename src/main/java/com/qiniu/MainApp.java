@@ -47,30 +47,30 @@ public class MainApp {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
             csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
-//            List<Statistic> statistics = LogAnalyse.statistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-//            StatisticsUtils.exportTo(statistics, csvReporter);
-//            StatisticsUtils.exportWeightedDayAvgTo(statistics, csvReporter);
+            List<Statistic> statistics = LogAnalyse.statistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
+            StatisticsUtils.exportTo(statistics, csvReporter);
+            StatisticsUtils.exportDayAvgTo(statistics, csvReporter);
 
 //            List<Statistic> statistics = LogAnalyse.statisticsWithProvince(
 //                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
 //            StatisticsUtils.exportWithProvinceTo(statistics, startTime, endTime);
 
-            Set<String> excludeProvinces = new HashSet<String>(){{
-                add("西藏");
-                add("贵州");
-                add("四川");
-                add("甘肃");
-                add("北京");
-//                add("广东");
-//                add("云南");
-//                add("广西");
-//                add("浙江");
-//                add("福建");
-//                add("河南");
-            }};
-            List<Statistic> statistics = LogAnalyse.statisticsExcludeProvinces(
-                    urlPattern, replaced, startLocalDateTime, endLocalDateTime, excludeProvinces);
-            StatisticsUtils.exportTo(statistics, csvReporter);
+//            Set<String> excludeProvinces = new HashSet<String>(){{
+//                add("贵州");
+//                add("四川");
+//                add("西藏");
+//                add("甘肃");
+////                add("北京");
+////                add("广东");
+////                add("云南");
+////                add("广西");
+////                add("浙江");
+////                add("福建");
+////                add("河南");
+//            }};
+//            List<Statistic> statistics = LogAnalyse.statisticsExcludeProvinces(
+//                    urlPattern, replaced, startLocalDateTime, endLocalDateTime, excludeProvinces);
+//            StatisticsUtils.exportTo(statistics, csvReporter);
         } else {
             LogFileUtils.listLogs(logUrls, goal);
         }
