@@ -39,7 +39,9 @@ public class LogAnalyse {
                 if (mpLog.getBufTimes() > 0) kdLogSet.add(mpLog);
                 int code = mpLog.getError();
                 long duration = mpLog.getVideoViewLoadDuration();
-                if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) errorLogs.add(mpLog);
+                if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) {
+                    if (mpLog.getHttpCode() != 403) errorLogs.add(mpLog);
+                }
                 return mpLog.getVideoViewLoadDuration();
             }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
 

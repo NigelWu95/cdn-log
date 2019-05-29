@@ -46,14 +46,14 @@ public class MainApp {
         } else if (goal.equals("download")) {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
-            csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
+            csvReporter = new CsvReporter("statistics/no403" + startTime + "-" + endTime + ".csv");
             List<Statistic> statistics = LogAnalyse.statistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
             StatisticsUtils.exportTo(statistics, csvReporter);
             StatisticsUtils.exportDayAvgTo(statistics, csvReporter);
 
-//            List<Statistic> statistics = LogAnalyse.statisticsWithProvince(
+//            List<Statistic> provinceStatistics = LogAnalyse.statisticsWithProvince(
 //                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-//            StatisticsUtils.exportWithProvinceTo(statistics, startTime, endTime);
+//            StatisticsUtils.exportWithProvinceTo(provinceStatistics, startTime, endTime);
 
 //            Set<String> excludeProvinces = new HashSet<String>(){{
 //                add("贵州");
