@@ -1,7 +1,7 @@
 package com.qiniu;
 
 import com.qiniu.common.Config;
-import com.qiniu.miaopai.LogAnalyse;
+import com.qiniu.miaopai.LogAnalyseUtils;
 import com.qiniu.miaopai.Statistic;
 import com.qiniu.statements.CsvReporter;
 import com.qiniu.statements.DataReporter;
@@ -46,12 +46,12 @@ public class MainApp {
         } else if (goal.equals("download")) {
             LogFileUtils.saveLogs(logUrls);
         } else if (goal.equals("analyse")) {
-            csvReporter = new CsvReporter("statistics/no403" + startTime + "-" + endTime + ".csv");
-            List<Statistic> statistics = LogAnalyse.statistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
+            csvReporter = new CsvReporter("statistics/" + startTime + "-" + endTime + ".csv");
+            List<Statistic> statistics = LogAnalyseUtils.statistics(urlPattern, replaced, startLocalDateTime, endLocalDateTime);
             StatisticsUtils.exportTo(statistics, csvReporter);
             StatisticsUtils.exportDayAvgTo(statistics, csvReporter);
 
-//            List<Statistic> provinceStatistics = LogAnalyse.statisticsWithProvince(
+//            List<Statistic> provinceStatistics = LogAnalyseUtils.statisticsWithProvince(
 //                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
 //            StatisticsUtils.exportWithProvinceTo(provinceStatistics, startTime, endTime);
 
@@ -68,7 +68,7 @@ public class MainApp {
 ////                add("福建");
 ////                add("河南");
 //            }};
-//            List<Statistic> statistics = LogAnalyse.statisticsExcludeProvinces(
+//            List<Statistic> statistics = LogAnalyseUtils.statisticsExcludeProvinces(
 //                    urlPattern, replaced, startLocalDateTime, endLocalDateTime, excludeProvinces);
 //            StatisticsUtils.exportTo(statistics, csvReporter);
         } else {

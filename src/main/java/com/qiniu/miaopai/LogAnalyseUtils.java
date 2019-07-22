@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class LogAnalyse {
+public class LogAnalyseUtils {
 
     public static List<Statistic> statistics(String file) throws IOException {
         return statistics(LogFileUtils.readLogsFrom(file));
@@ -40,7 +40,8 @@ public class LogAnalyse {
                 int code = mpLog.getError();
                 long duration = mpLog.getVideoViewLoadDuration();
                 if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) {
-                    if (mpLog.getHttpCode() != 403) errorLogs.add(mpLog);
+//                    if (mpLog.getHttpCode() != 403)
+                        errorLogs.add(mpLog);
                 }
                 return mpLog.getVideoViewLoadDuration();
             }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
@@ -122,7 +123,7 @@ public class LogAnalyse {
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            statistics.addAll(LogAnalyse.statistics(logs).stream()
+            statistics.addAll(LogAnalyseUtils.statistics(logs).stream()
                     .filter(statistic -> statistic.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistic.getPointTime().compareTo(finalLocalDateTime) > 0)
                     .collect(Collectors.toList()));
@@ -153,7 +154,7 @@ public class LogAnalyse {
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            statistics.addAll(LogAnalyse.statisticsWithProvince(logs).stream()
+            statistics.addAll(LogAnalyseUtils.statisticsWithProvince(logs).stream()
                     .filter(statistic -> statistic.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistic.getPointTime().compareTo(finalLocalDateTime) > 0)
                     .collect(Collectors.toList()));
@@ -189,7 +190,7 @@ public class LogAnalyse {
             }
             logs.addAll(nextPhraseLogs);
             LocalDateTime finalLocalDateTime = localDateTime;
-            statistics.addAll(LogAnalyse.statistics(logs).stream()
+            statistics.addAll(LogAnalyseUtils.statistics(logs).stream()
                     .filter(statistic -> statistic.getPointTime().compareTo(nextDateTime) <= 0 &&
                             statistic.getPointTime().compareTo(finalLocalDateTime) > 0)
                     .collect(Collectors.toList()));
