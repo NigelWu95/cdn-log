@@ -1,4 +1,4 @@
-package com.qiniu.miaopai;
+package com.qiniu.log;
 
 import com.alibaba.fastjson.JSON;
 

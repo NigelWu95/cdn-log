@@ -1,7 +1,8 @@
-package com.qiniu.miaopai;
+package com.qiniu.util;
 
-import com.qiniu.util.DatetimeUtils;
-import com.qiniu.util.LogFileUtils;
+import com.qiniu.log.ErrorStatistic;
+import com.qiniu.log.MPLog;
+import com.qiniu.log.Statistic;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
@@ -41,7 +42,7 @@ public class LogAnalyseUtils {
                 long duration = mpLog.getVideoViewLoadDuration();
                 if (code != 0 && code != -456 && code != -459 && duration >= 1 && duration <= 60000) {
 //                    if (mpLog.getHttpCode() != 403)
-                        errorLogs.add(mpLog);
+                    errorLogs.add(mpLog);
                 }
                 return mpLog.getVideoViewLoadDuration();
             }).filter(duration -> duration >= 1 && duration <= 60000).collect(Collectors.toList());
@@ -62,6 +63,22 @@ public class LogAnalyseUtils {
             errorLogs.clear();
         }
         return statistics;
+    }
+
+    public static List<ErrorStatistic> errorStatistics(List<MPLog> logs) {
+        List<ErrorStatistic> errorStatistics = new ArrayList<>();
+        List<MPLog> errorLogs = new ArrayList<>();
+        Map<LocalDateTime, List<MPLog>> groupedMap = logs.parallelStream()
+                .collect(Collectors.groupingBy(mpLog -> DatetimeUtils.groupedTimeBy5Min(mpLog.getTime())));
+        List<MPLog> groupedLogs;
+        for (LocalDateTime localDateTime : groupedMap.keySet()) {
+            groupedLogs = groupedMap.get(localDateTime);
+            groupedLogs.parallelStream().collect(Collectors.groupingBy(MPLog::getError, Collectors.counting()));
+            long errorCount = errorLogs.size();
+//            errorStatistics.add(new ErrorStatistic(localDateTime, reqCount, loadDurationSum, loadDurationCount, UV, kdUV, errorCount));
+            errorLogs.clear();
+        }
+        return errorStatistics;
     }
 
     public static List<Statistic> statisticsWithProvince(List<MPLog> logs) {

@@ -1,8 +1,8 @@
 package com.qiniu;
 
 import com.qiniu.common.Config;
-import com.qiniu.miaopai.LogAnalyseUtils;
-import com.qiniu.miaopai.Statistic;
+import com.qiniu.util.LogAnalyseUtils;
+import com.qiniu.log.Statistic;
 import com.qiniu.statements.CsvReporter;
 import com.qiniu.statements.DataReporter;
 import com.qiniu.util.LogFileUtils;
@@ -51,9 +51,11 @@ public class MainApp {
             StatisticsUtils.exportTo(statistics, csvReporter);
             StatisticsUtils.exportDayAvgTo(statistics, csvReporter);
 
-//            List<Statistic> provinceStatistics = LogAnalyseUtils.statisticsWithProvince(
-//                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
-//            StatisticsUtils.exportWithProvinceTo(provinceStatistics, startTime, endTime);
+            List<Statistic> provinceStatistics = LogAnalyseUtils.statisticsWithProvince(
+                    urlPattern, replaced, startLocalDateTime, endLocalDateTime);
+            provinceStatistics = provinceStatistics.parallelStream().filter(statistic -> statistic.getProvince().equals("河南"))
+                    .collect(Collectors.toList());
+            StatisticsUtils.exportWithProvinceTo(provinceStatistics, startTime, endTime);
 
 //            Set<String> excludeProvinces = new HashSet<String>(){{
 //                add("贵州");

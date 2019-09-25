@@ -1,6 +1,6 @@
 package com.qiniu.util;
 
-import com.qiniu.miaopai.Statistic;
+import com.qiniu.log.Statistic;
 import com.qiniu.statements.DataReporter;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;

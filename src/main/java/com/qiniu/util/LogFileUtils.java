@@ -2,7 +2,7 @@ package com.qiniu.util;
 
 import com.alibaba.fastjson.JSON;
 import com.qiniu.common.QiniuException;
-import com.qiniu.miaopai.MPLog;
+import com.qiniu.log.MPLog;
 import com.qiniu.storage.BucketManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
